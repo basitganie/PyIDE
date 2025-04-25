@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Code Editor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-okaidia.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fira Code', monospace;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .editor-container {
+            background: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            overflow: hidden;
+            flex-grow: 1;
+            position: relative;
+        }
+        .panel-header {
+            background: #252526;
+            color: #d4d4d4;
+            padding: 8px 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+        }
+        .editor-wrapper {
+            position: relative;
+            height: 60vh;
+            overflow: hidden;
+        }
+        #code-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 15px 15px 15px 60px;
+            border: none;
+            resize: none;
+            background: transparent;
+            color: transparent;
+            caret-color: #d4d4d4;
+            tab-size: 4;
+            outline: none;
+            white-space: pre;
+            overflow: auto;
+            z-index: 2;
+        }
+        #code-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 15px 15px 15px 60px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .output-container {
+            background: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        #output {
+            width: 100%;
+            height: 30vh;
+            padding: 15px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow-y: auto;
+            border-top: 1px solid #333;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+        #clear-btn {
+            background: #5a5a5a;
+        }
+        #clear-btn:hover {
+            background: #6a6a6a;
+        }
+        .loading {
+            display: none;
+            color: #569cd6;
+            font-style: italic;
+            margin-top: 10px;
+        }
+        .error-line {
+            background-color: rgba(255, 0, 0, 0.2);
+        }
+        .status {
+            color: #569cd6;
+            font-size: 12px;
+        }
+        .line-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            padding: 15px 5px;
+            text-align: right;
+            color: #858585;
+            background-color: #1e1e1e;
+            border-right: 1px solid #333;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            z-index: 3;
+        }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #252526;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #454545;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-container">
+            <div class="panel-header">
+                <span>main.py</span>
+                <span class="status" id="status">Initializing Python...</span>
+            </div>
+            <div class="editor-wrapper">
+                <div class="line-numbers" id="line-numbers"></div>
+                <textarea id="code-input" spellcheck="false"># Welcome to Python Editor
+# Try writing some Python code here
+
+def greet(name):
+    """A simple greeting function"""
+    return f"Hello, {name}!"
+
+print(greet("Basit"))
+
+# Math operations
+x = 5 + 3
+print(f"5 + 3 = {x}")
+
+# List comprehension
+squares = [x**2 for x in range(10)]
+print(f"Squares: {squares}")</textarea>
+                <pre id="code-highlight"><code class="language-python"></code></pre>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="run-btn">▶ Run (Ctrl+Enter)</button>
+            <button id="clear-btn">🗑️ Clear Output</button>
+        </div>
+        
+        <div class="output-container">
+            <div class="panel-header">
+                <span>Output</span>
+            </div>
+            <div id="output"></div>
+        </div>
+        
+        <div id="loading" class="loading">Loading Python runtime...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
+
+    <script>
+        // Elements
+        const codeInput = document.getElementById('code-input');
+        const codeHighlight = document.getElementById('code-highlight').querySelector('code');
+        const output = document.getElementById('output');
+        const runBtn = document.getElementById('run-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const loading = document.getElementById('loading');
+        const status = document.getElementById('status');
+        const lineNumbers = document.getElementById('line-numbers');
+        
+        // Pyodide instance
+        let pyodide;
+        
+        // Update line numbers and syntax highlighting
+        function updateEditor() {
+            const code = codeInput.value;
+            const lines = code.split('\n');
+            
+            // Update line numbers
+            lineNumbers.innerHTML = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
+            
+            // Update syntax highlighting
+            codeHighlight.innerHTML = Prism.highlight(code, Prism.languages.python, 'python');
+            
+            // Sync scroll positions
+            codeHighlight.scrollTop = codeInput.scrollTop;
+            codeHighlight.scrollLeft = codeInput.scrollLeft;
+        }
+        
+        // Initialize Pyodide
+        async function initializePyodide() {
+            loading.style.display = 'block';
+            status.textContent = 'Initializing Python runtime...';
+            
+            try {
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
+                });
+                
+                // Redirect Python's stdout/stderr to our output div
+                pyodide.setStdout({batched: (text) => {
+                    output.textContent += text;
+                    output.scrollTop = output.scrollHeight;
+                }});
+                
+                pyodide.setStderr({batched: (text) => {
+                    output.textContent += text;
+                    output.scrollTop = output.scrollHeight;
+                }});
+                
+                await pyodide.loadPackage("numpy");
+                status.textContent = 'Ready';
+                runBtn.disabled = false;
+            } catch (err) {
+                status.textContent = 'Failed to initialize';
+                output.textContent = `Error: ${err}\n`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Run Python code
+        async function runPython() {
+            const code = codeInput.value;
+            status.textContent = 'Running...';
+            
+            try {
+                output.textContent = ''; // Clear previous output
+                await pyodide.runPythonAsync(code);
+                status.textContent = 'Execution completed';
+            } catch (err) {
+                output.textContent += `\nError: ${err}\n`;
+                status.textContent = 'Execution failed';
+                highlightErrorLine(err);
+            }
+        }
+        
+        // Highlight error line
+        function highlightErrorLine(error) {
+            const match = error.message.match(/line (\d+)/);
+            if (match) {
+                const lineNum = parseInt(match[1]) - 1;
+                codeInput.classList.add('error-line');
+                
+                // Scroll to error line
+                const lineHeight = 20;
+                codeInput.scrollTop = lineNum * lineHeight;
+            }
+        }
+        
+        // Event listeners
+        runBtn.addEventListener('click', runPython);
+        clearBtn.addEventListener('click', () => {
+            output.textContent = '';
+            status.textContent = 'Output cleared';
+        });
+        
+        // Handle editor changes
+        codeInput.addEventListener('input', updateEditor);
+        codeInput.addEventListener('scroll', () => {
+            codeHighlight.scrollTop = codeInput.scrollTop;
+            codeHighlight.scrollLeft = codeInput.scrollLeft;
+        });
+        
+        // Ctrl+Enter shortcut
+        codeInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                runPython();
+            }
+            
+            // Handle Tab key
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = codeInput.selectionStart;
+                const end = codeInput.selectionEnd;
+                
+                // Insert 4 spaces
+                codeInput.value = codeInput.value.substring(0, start) + '    ' + codeInput.value.substring(end);
+                
+                // Move cursor
+                codeInput.selectionStart = codeInput.selectionEnd = start + 4;
+                updateEditor();
+            }
+        });
+        
+        // Initialize
+        initializePyodide();
+        updateEditor();
+    </script>
+</body>
+</html>
