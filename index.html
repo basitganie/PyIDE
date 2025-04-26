@@ -158,6 +158,7 @@
             overflow: hidden;
             width: 50px;
             box-sizing: border-box;
+            pointer-events: none;
         }
         .theme-selector {
             margin-left: auto;
@@ -293,6 +294,7 @@ print(f"Squares: {squares}")
         // Elements
         const codeInput = document.getElementById('code-input');
         const codeHighlight = document.getElementById('code-highlight').querySelector('code');
+        const codeHighlightContainer = document.getElementById('code-highlight');
         const output = document.getElementById('output');
         const runBtn = document.getElementById('run-btn');
         const clearBtn = document.getElementById('clear-btn');
@@ -316,7 +318,7 @@ print(f"Squares: {squares}")
         // Code examples
         const codeExamples = {
             hello: `# Hello World Example
-            # Author: Basit Ahmad Ganie
+# Author: Basit Ahmad Ganie
 print("Hello, World!")
 
 # String manipulation
@@ -428,8 +430,10 @@ print(f"Random 3x3 matrix:\\n{random_array}")
         
         // Sync scrolling between code input and highlighting
         function syncScroll() {
-            codeHighlight.scrollTop = codeInput.scrollTop;
-            codeHighlight.scrollLeft = codeInput.scrollLeft;
+            // Two-way sync between code input and highlight
+            codeHighlightContainer.scrollTop = codeInput.scrollTop;
+            codeHighlightContainer.scrollLeft = codeInput.scrollLeft;
+            
             // Ensure line numbers scroll vertically with the editor
             lineNumbers.scrollTop = codeInput.scrollTop;
         }
@@ -687,7 +691,18 @@ print(f"Random 3x3 matrix:\\n{random_array}")
         
         // Handle editor changes
         codeInput.addEventListener('input', updateEditor);
+        
+        // Improved scroll handling with both input and scroll events
         codeInput.addEventListener('scroll', syncScroll);
+        codeInput.addEventListener('input', syncScroll);
+        
+        // Add scroll listener to the highlighted code container to sync back
+        codeHighlightContainer.addEventListener('scroll', () => {
+            if (codeInput.scrollTop !== codeHighlightContainer.scrollTop) {
+                codeInput.scrollTop = codeHighlightContainer.scrollTop;
+                lineNumbers.scrollTop = codeHighlightContainer.scrollTop;
+            }
+        });
         
         // Ctrl+Enter shortcut
         codeInput.addEventListener('keydown', (e) => {
