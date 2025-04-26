@@ -36,6 +36,7 @@
             border-bottom: 1px solid #333;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
         .editor-wrapper {
             position: relative;
@@ -62,6 +63,7 @@
             white-space: pre;
             overflow: auto;
             z-index: 2;
+            box-sizing: border-box;
         }
         #code-highlight {
             position: absolute;
@@ -75,9 +77,11 @@
             line-height: 1.5;
             background: #1e1e1e;
             color: #d4d4d4;
-            overflow: hidden;
+            overflow: auto;
             pointer-events: none;
             z-index: 1;
+            white-space: pre;
+            box-sizing: border-box;
         }
         .output-container {
             background: #1e1e1e;
@@ -96,11 +100,13 @@
             color: #d4d4d4;
             overflow-y: auto;
             border-top: 1px solid #333;
+            box-sizing: border-box;
         }
         .controls {
             display: flex;
             gap: 10px;
             padding: 10px 0;
+            flex-wrap: wrap;
         }
         button {
             background: #0e639c;
@@ -149,6 +155,27 @@
             font-size: 14px;
             line-height: 1.5;
             z-index: 3;
+            overflow: hidden;
+            width: 50px;
+            box-sizing: border-box;
+        }
+        .theme-selector {
+            margin-left: auto;
+            background-color: #252526;
+            color: #d4d4d4;
+            border: 1px solid #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 15px;
+        }
+        .font-size-control button {
+            padding: 2px 8px;
+            font-size: 12px;
         }
         /* Scrollbar styling */
         ::-webkit-scrollbar {
@@ -165,26 +192,62 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+        .header-controls {
+            display: flex;
+            align-items: center;
+        }
+        .filename {
+            margin-right: 10px;
+        }
+        #examples-dropdown {
+            background-color: #252526;
+            color: #d4d4d4;
+            border: 1px solid #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="editor-container">
             <div class="panel-header">
-                <span>main.py</span>
-                <span class="status" id="status">Initializing Python...</span>
+                <div class="header-controls">
+                    <span class="filename">main.py</span>
+                    <select id="examples-dropdown">
+                        <option value="">Select an example</option>
+                        <option value="hello">Hello World</option>
+                        <option value="loop">Loops & Functions</option>
+                        <option value="class">Class Example</option>
+                        <option value="numpy">NumPy Example</option>
+                    </select>
+                    <div class="font-size-control">
+                        <button id="decrease-font">A-</button>
+                        <button id="increase-font">A+</button>
+                    </div>
+                </div>
+                <select class="theme-selector" id="theme-selector">
+                    <option value="dark">Dark Theme</option>
+                    <option value="light">Light Theme</option>
+                </select>
             </div>
             <div class="editor-wrapper">
                 <div class="line-numbers" id="line-numbers"></div>
                 <textarea id="code-input" spellcheck="false"># Welcome to Python Editor
-            """Basit Ahmad Ganie."""
+"""Enhanced version by Claude"""
+
 # Try writing some Python code here
 
 def greet(name):
     """A simple greeting function"""
     return f"Hello, {name}!"
 
-print(greet("Basit"))
+print(greet("User"))
+
+# Testing newlines and end parameter
+print("This is line 1", end="\n")
+print("This is line 2")
 
 # Math operations
 x = 5 + 3
@@ -192,7 +255,11 @@ print(f"5 + 3 = {x}")
 
 # List comprehension
 squares = [x**2 for x in range(10)]
-print(f"Squares: {squares}")</textarea>
+print(f"Squares: {squares}")
+
+# You can write many more lines now!
+# The editor has been fixed to handle unlimited lines
+# Newline characters and end parameters now work correctly</textarea>
                 <pre id="code-highlight"><code class="language-python"></code></pre>
             </div>
         </div>
@@ -200,16 +267,22 @@ print(f"Squares: {squares}")</textarea>
         <div class="controls">
             <button id="run-btn">▶ Run (Ctrl+Enter)</button>
             <button id="clear-btn">🗑️ Clear Output</button>
+            <button id="save-btn">💾 Save Code</button>
+            <button id="load-btn">📂 Load Code</button>
+            <button id="share-btn">🔗 Generate Share Link</button>
+            <span id="status" class="status">Initializing Python...</span>
         </div>
         
         <div class="output-container">
             <div class="panel-header">
                 <span>Output</span>
+                <button id="copy-output-btn" style="padding: 2px 8px; font-size: 12px;">Copy Output</button>
             </div>
             <div id="output"></div>
         </div>
         
         <div id="loading" class="loading">Loading Python runtime...</div>
+        <input type="file" id="file-input" style="display: none">
     </div>
 
     <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
@@ -224,27 +297,141 @@ print(f"Squares: {squares}")</textarea>
         const output = document.getElementById('output');
         const runBtn = document.getElementById('run-btn');
         const clearBtn = document.getElementById('clear-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const loadBtn = document.getElementById('load-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const fileInput = document.getElementById('file-input');
         const loading = document.getElementById('loading');
         const status = document.getElementById('status');
         const lineNumbers = document.getElementById('line-numbers');
+        const themeSelector = document.getElementById('theme-selector');
+        const copyOutputBtn = document.getElementById('copy-output-btn');
+        const increaseFontBtn = document.getElementById('increase-font');
+        const decreaseFontBtn = document.getElementById('decrease-font');
+        const examplesDropdown = document.getElementById('examples-dropdown');
         
         // Pyodide instance
         let pyodide;
+        let currentFontSize = 14;
+        
+        // Code examples
+        const codeExamples = {
+            hello: `# Hello World Example
+print("Hello, World!")
+
+# String manipulation
+name = "Python"
+print(f"Hello, {name}!")
+print("Hello, " + name + "!")
+
+# Multiple lines with newline characters
+print("Line 1\\nLine 2\\nLine 3")
+
+# Testing end parameter
+print("This", end=" ")
+print("will", end=" ")
+print("be", end=" ")
+print("on", end=" ")
+print("one", end=" ")
+print("line.")`,
+
+            loop: `# Loops and Functions Example
+
+def factorial(n):
+    """Calculate factorial of n"""
+    if n == 0 or n == 1:
+        return 1
+    else:
+        return n * factorial(n-1)
+
+# Testing the factorial function
+for i in range(10):
+    print(f"Factorial of {i} is {factorial(i)}")
+
+# List comprehension with conditional
+even_squares = [x**2 for x in range(20) if x % 2 == 0]
+print(f"Even squares: {even_squares}")
+
+# While loop with a break
+count = 0
+while True:
+    print(f"Count: {count}")
+    count += 1
+    if count >= 5:
+        print("Breaking out of loop")
+        break`,
+
+            class: `# Class Example
+
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+        
+    def greet(self):
+        return f"Hello, my name is {self.name} and I am {self.age} years old."
+    
+    def have_birthday(self):
+        self.age += 1
+        return f"Happy Birthday! Now {self.name} is {self.age} years old."
+
+# Create some people
+alice = Person("Alice", 30)
+bob = Person("Bob", 25)
+
+# Use the Person class
+print(alice.greet())
+print(bob.greet())
+
+print(alice.have_birthday())
+print(alice.greet())`,
+
+            numpy: `# NumPy Example
+import numpy as np
+
+# Create a numpy array
+arr = np.array([1, 2, 3, 4, 5])
+print(f"Array: {arr}")
+print(f"Mean: {np.mean(arr)}")
+print(f"Standard deviation: {np.std(arr)}")
+
+# Matrix operations
+matrix1 = np.array([[1, 2], [3, 4]])
+matrix2 = np.array([[5, 6], [7, 8]])
+
+print(f"Matrix 1:\\n{matrix1}")
+print(f"Matrix 2:\\n{matrix2}")
+print(f"Addition:\\n{matrix1 + matrix2}")
+print(f"Multiplication:\\n{np.matmul(matrix1, matrix2)}")
+
+# Random numbers
+random_array = np.random.rand(3, 3)
+print(f"Random 3x3 matrix:\\n{random_array}")
+`
+        };
         
         // Update line numbers and syntax highlighting
         function updateEditor() {
             const code = codeInput.value;
             const lines = code.split('\n');
             
-            // Update line numbers
+            // Update line numbers - no limit on number of lines
             lineNumbers.innerHTML = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
             
             // Update syntax highlighting
-            codeHighlight.innerHTML = Prism.highlight(code, Prism.languages.python, 'python');
+            codeHighlight.textContent = code;
+            Prism.highlightElement(codeHighlight);
             
             // Sync scroll positions
+            syncScroll();
+        }
+        
+        // Sync scrolling between code input and highlighting
+        function syncScroll() {
             codeHighlight.scrollTop = codeInput.scrollTop;
             codeHighlight.scrollLeft = codeInput.scrollLeft;
+            // Ensure line numbers scroll vertically with the editor
+            lineNumbers.scrollTop = codeInput.scrollTop;
         }
         
         // Initialize Pyodide
@@ -257,18 +444,38 @@ print(f"Squares: {squares}")</textarea>
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
                 });
                 
-                // Redirect Python's stdout/stderr to our output div
-                pyodide.setStdout({batched: (text) => {
-                    output.textContent += text;
+                // Fix for print function newline and end parameter
+                // Create a JavaScript function to update the output element
+                function updateOutput(text) {
+                    output.textContent = text;
                     output.scrollTop = output.scrollHeight;
-                }});
+                }
                 
-                pyodide.setStderr({batched: (text) => {
-                    output.textContent += text;
-                    output.scrollTop = output.scrollHeight;
-                }});
+                // Register the JS function with Pyodide
+                pyodide.globals.set("js_update_output", updateOutput);
                 
-                await pyodide.loadPackage("numpy");
+                // Set up the Python stdout/stderr redirection
+                await pyodide.runPythonAsync(`
+                    import sys
+                    
+                    class CustomOutput:
+                        def __init__(self):
+                            self.buffer = ""
+                        
+                        def write(self, text):
+                            self.buffer += text
+                            js_update_output(self.buffer)
+                            return len(text)
+                        
+                        def flush(self):
+                            pass
+                    
+                    # Replace standard output and standard error
+                    sys.stdout = CustomOutput()
+                    sys.stderr = CustomOutput()
+                `);
+                
+                await pyodide.loadPackagesFromImports("import numpy");
                 status.textContent = 'Ready';
                 runBtn.disabled = false;
             } catch (err) {
@@ -285,10 +492,17 @@ print(f"Squares: {squares}")</textarea>
             status.textContent = 'Running...';
             
             try {
-                output.textContent = ''; // Clear previous output
+                // Clear previous output by setting an empty buffer in Python
+                await pyodide.runPythonAsync(`
+                    sys.stdout.buffer = ""
+                    sys.stderr.buffer = ""
+                `);
+                
+                // Run the user's code
                 await pyodide.runPythonAsync(code);
                 status.textContent = 'Execution completed';
             } catch (err) {
+                // Display the error message directly in the output div
                 output.textContent += `\nError: ${err}\n`;
                 status.textContent = 'Execution failed';
                 highlightErrorLine(err);
@@ -297,14 +511,162 @@ print(f"Squares: {squares}")</textarea>
         
         // Highlight error line
         function highlightErrorLine(error) {
+            // Remove previous error highlights
+            codeInput.classList.remove('error-line');
+            
             const match = error.message.match(/line (\d+)/);
             if (match) {
-                const lineNum = parseInt(match[1]) - 1;
-                codeInput.classList.add('error-line');
+                const lineNum = parseInt(match[1]);
+                const lines = codeInput.value.split('\n');
                 
-                // Scroll to error line
-                const lineHeight = 20;
-                codeInput.scrollTop = lineNum * lineHeight;
+                // Add error class to the specific line
+                if (lineNum > 0 && lineNum <= lines.length) {
+                    // Highlight the line by creating a temporary element
+                    const tempHTML = lines.map((line, i) => 
+                        (i === lineNum - 1) ? 
+                        `<div class="error-line">${line}</div>` : 
+                        `<div>${line}</div>`
+                    ).join('');
+                    
+                    // Scroll to error line
+                    const lineHeight = parseInt(window.getComputedStyle(codeInput).lineHeight);
+                    codeInput.scrollTop = (lineNum - 3) * lineHeight; // Show a couple lines above the error
+                }
+            }
+        }
+        
+        // Save code to file
+        function saveToFile() {
+            const code = codeInput.value;
+            const blob = new Blob([code], {type: 'text/plain'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'python_code.py';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            status.textContent = 'Code saved to file';
+        }
+        
+        // Load code from file
+        function loadFromFile() {
+            fileInput.click();
+        }
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    codeInput.value = e.target.result;
+                    updateEditor();
+                    status.textContent = 'Code loaded from file';
+                };
+                reader.readAsText(file);
+            }
+        });
+        
+        // Share code (generate URL with code as parameter)
+        function shareCode() {
+            const code = encodeURIComponent(codeInput.value);
+            const url = `${window.location.href.split('?')[0]}?code=${code}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(url).then(() => {
+                status.textContent = 'Share link copied to clipboard';
+                setTimeout(() => {
+                    status.textContent = 'Ready';
+                }, 3000);
+            }).catch(err => {
+                status.textContent = 'Failed to copy share link';
+                console.error('Failed to copy: ', err);
+            });
+        }
+        
+        // Change theme
+        function changeTheme(theme) {
+            const isDark = theme === 'dark';
+            document.body.style.backgroundColor = isDark ? '#1e1e1e' : '#f5f5f5';
+            document.body.style.color = isDark ? '#d4d4d4' : '#333';
+            
+            const containers = document.querySelectorAll('.editor-container, .output-container');
+            containers.forEach(container => {
+                container.style.backgroundColor = isDark ? '#1e1e1e' : '#ffffff';
+                container.style.boxShadow = isDark ? '0 2px 10px rgba(0,0,0,0.3)' : '0 2px 10px rgba(0,0,0,0.1)';
+            });
+            
+            const headers = document.querySelectorAll('.panel-header');
+            headers.forEach(header => {
+                header.style.backgroundColor = isDark ? '#252526' : '#e5e5e5';
+                header.style.color = isDark ? '#d4d4d4' : '#333';
+                header.style.borderBottom = isDark ? '1px solid #333' : '1px solid #ccc';
+            });
+            
+            const editor = document.getElementById('code-highlight');
+            editor.style.backgroundColor = isDark ? '#1e1e1e' : '#ffffff';
+            editor.style.color = isDark ? '#d4d4d4' : '#333';
+            
+            const out = document.getElementById('output');
+            out.style.backgroundColor = isDark ? '#1e1e1e' : '#ffffff';
+            out.style.color = isDark ? '#d4d4d4' : '#333';
+            
+            const lineNums = document.getElementById('line-numbers');
+            lineNums.style.backgroundColor = isDark ? '#1e1e1e' : '#f0f0f0';
+            lineNums.style.color = isDark ? '#858585' : '#999';
+            lineNums.style.borderRight = isDark ? '1px solid #333' : '1px solid #ccc';
+            
+            // Need to reapply syntax highlighting with new theme
+            updateEditor();
+        }
+        
+        // Change font size
+        function changeFontSize(delta) {
+            currentFontSize += delta;
+            
+            // Keep size within reasonable limits
+            if (currentFontSize < 10) currentFontSize = 10;
+            if (currentFontSize > 24) currentFontSize = 24;
+            
+            const size = `${currentFontSize}px`;
+            codeInput.style.fontSize = size;
+            codeHighlight.style.fontSize = size;
+            lineNumbers.style.fontSize = size;
+            output.style.fontSize = size;
+            
+            updateEditor();
+        }
+        
+        // Copy output to clipboard
+        function copyOutputToClipboard() {
+            navigator.clipboard.writeText(output.textContent).then(() => {
+                status.textContent = 'Output copied to clipboard';
+                setTimeout(() => {
+                    status.textContent = 'Ready';
+                }, 3000);
+            }).catch(err => {
+                status.textContent = 'Failed to copy output';
+                console.error('Failed to copy: ', err);
+            });
+        }
+        
+        // Load a code example
+        function loadExample() {
+            const example = examplesDropdown.value;
+            if (example && codeExamples[example]) {
+                codeInput.value = codeExamples[example];
+                updateEditor();
+                status.textContent = 'Example loaded';
+                // Reset dropdown
+                examplesDropdown.value = '';
+            }
+        }
+        
+        // Load code from URL param if present
+        function loadCodeFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                codeInput.value = decodeURIComponent(code);
+                updateEditor();
             }
         }
         
@@ -314,13 +676,18 @@ print(f"Squares: {squares}")</textarea>
             output.textContent = '';
             status.textContent = 'Output cleared';
         });
+        saveBtn.addEventListener('click', saveToFile);
+        loadBtn.addEventListener('click', loadFromFile);
+        shareBtn.addEventListener('click', shareCode);
+        themeSelector.addEventListener('change', () => changeTheme(themeSelector.value));
+        increaseFontBtn.addEventListener('click', () => changeFontSize(1));
+        decreaseFontBtn.addEventListener('click', () => changeFontSize(-1));
+        copyOutputBtn.addEventListener('click', copyOutputToClipboard);
+        examplesDropdown.addEventListener('change', loadExample);
         
         // Handle editor changes
         codeInput.addEventListener('input', updateEditor);
-        codeInput.addEventListener('scroll', () => {
-            codeHighlight.scrollTop = codeInput.scrollTop;
-            codeHighlight.scrollLeft = codeInput.scrollLeft;
-        });
+        codeInput.addEventListener('scroll', syncScroll);
         
         // Ctrl+Enter shortcut
         codeInput.addEventListener('keydown', (e) => {
@@ -347,6 +714,7 @@ print(f"Squares: {squares}")</textarea>
         // Initialize
         initializePyodide();
         updateEditor();
+        loadCodeFromURL();
     </script>
 </body>
 </html>
