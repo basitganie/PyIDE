@@ -3,46 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python Code Editor</title>
+    <title>Python Code Editor - Basit Ahmad Ganie</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-okaidia.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Fira Code', monospace;
-            margin: 0;
-            padding: 20px;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #2d2d30;
+            --text-primary: #d4d4d4;
+            --text-secondary: #858585;
+            --border-color: #333;
+            --accent-blue: #0e639c;
+            --accent-green: #4ec9b0;
+            --accent-red: #f44747;
+            --accent-yellow: #ffcc02;
+            --vim-bg: #0c0c0c;
+            --vim-fg: #00ff00;
+            --vim-accent: #ff6600;
         }
+
+        body {
+            font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', monospace;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 10px;
         }
-        .editor-container {
-            background: #1e1e1e;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+
+        /* File Tabs */
+        .tabs-container {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            min-height: 40px;
+        }
+
+        .file-tabs {
+            display: flex;
+            flex: 1;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+        }
+
+        .file-tab {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            padding: 8px 16px 8px 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            transition: all 0.2s ease;
+            position: relative;
+            min-width: 120px;
+            max-width: 200px;
+        }
+
+        .file-tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .file-tab:hover:not(.active) {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .file-tab .close-btn {
+            opacity: 0;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: opacity 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .file-tab:hover .close-btn,
+        .file-tab.active .close-btn {
+            opacity: 1;
+        }
+
+        .file-tab .close-btn:hover {
+            color: var(--accent-red);
+        }
+
+        .new-file-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            font-size: 16px;
+            transition: color 0.2s;
+        }
+
+        .new-file-btn:hover {
+            color: var(--text-primary);
+        }
+
+        /* Editor Layout */
+        .editor-layout {
+            flex: 1;
+            display: flex;
             overflow: hidden;
-            flex-grow: 1;
+        }
+
+        .editor-container {
+            flex: 1;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
             position: relative;
         }
-        .panel-header {
-            background: #252526;
-            color: #d4d4d4;
+
+        .editor-header {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             padding: 8px 15px;
             font-weight: bold;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            min-height: 32px;
         }
+
         .editor-wrapper {
+            flex: 1;
             position: relative;
-            height: 60vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .line-numbers {
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            padding: 15px 8px;
+            text-align: right;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 21px;
+            min-width: 50px;
+            border-right: 1px solid var(--border-color);
+            user-select: none;
+            overflow: hidden;
+            white-space: pre;
+        }
+
+        .code-editor {
+            flex: 1;
+            position: relative;
             overflow: hidden;
         }
+
         #code-input {
             position: absolute;
             top: 0;
@@ -51,13 +179,13 @@
             height: 100%;
             font-family: 'Fira Code', monospace;
             font-size: 14px;
-            line-height: 1.5;
-            padding: 15px 15px 15px 60px;
+            line-height: 21px;
+            padding: 15px;
             border: none;
             resize: none;
             background: transparent;
             color: transparent;
-            caret-color: #d4d4d4;
+            caret-color: var(--text-primary);
             tab-size: 4;
             outline: none;
             white-space: pre;
@@ -65,224 +193,342 @@
             z-index: 2;
             box-sizing: border-box;
         }
+
         #code-highlight {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            padding: 15px 15px 15px 60px;
+            padding: 15px;
             font-family: 'Fira Code', monospace;
             font-size: 14px;
-            line-height: 1.5;
-            background: #1e1e1e;
-            color: #d4d4d4;
+            line-height: 21px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             overflow: auto;
             pointer-events: none;
             z-index: 1;
             white-space: pre;
             box-sizing: border-box;
         }
-        .output-container {
-            background: #1e1e1e;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        #output {
-            width: 100%;
-            height: 30vh;
-            padding: 15px;
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            white-space: pre-wrap;
-            background: #1e1e1e;
-            color: #d4d4d4;
-            overflow-y: auto;
-            border-top: 1px solid #333;
-            box-sizing: border-box;
-        }
+
+        /* Controls */
         .controls {
+            background: var(--bg-secondary);
+            padding: 10px 15px;
             display: flex;
             gap: 10px;
-            padding: 10px 0;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
             flex-wrap: wrap;
         }
+
         button {
-            background: #0e639c;
+            background: var(--accent-blue);
             color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            transition: background 0.2s;
+            font-family: inherit;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
+
         button:hover {
             background: #1177bb;
+            transform: translateY(-1px);
         }
+
+        button:active {
+            transform: translateY(0);
+        }
+
         #clear-btn {
             background: #5a5a5a;
         }
+
         #clear-btn:hover {
             background: #6a6a6a;
         }
-        .loading {
-            display: none;
-            color: #569cd6;
-            font-style: italic;
-            margin-top: 10px;
+
+        .btn-group {
+            display: flex;
+            gap: 5px;
         }
-        .error-line {
-            background-color: rgba(255, 0, 0, 0.2);
-        }
-        .status {
-            color: #569cd6;
-            font-size: 12px;
-        }
-        .line-numbers {
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            padding: 15px 5px;
-            text-align: right;
-            color: #858585;
-            background-color: #1e1e1e;
-            border-right: 1px solid #333;
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            z-index: 3;
+
+        /* Output Panel */
+        .output-container {
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 250px;
+            min-height: 150px;
+            max-height: 400px;
+            resize: vertical;
             overflow: hidden;
-            width: 50px;
-            box-sizing: border-box;
-            pointer-events: none;
         }
-        .theme-selector {
-            margin-left: auto;
-            background-color: #252526;
-            color: #d4d4d4;
-            border: 1px solid #333;
+
+        .output-header {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            min-height: 32px;
+        }
+
+        #output {
+            flex: 1;
+            padding: 15px;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-y: auto;
+            border: none;
+            outline: none;
+        }
+
+        /* Themes */
+        .theme-selector, select, input[type="text"] {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
             padding: 4px 8px;
             border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
         }
-        .font-size-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-left: 15px;
+
+        /* Vim Theme */
+        .vim-theme {
+            --bg-primary: var(--vim-bg);
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: var(--vim-fg);
+            --text-secondary: #00cc00;
+            --border-color: #333;
+            --accent-blue: var(--vim-accent);
         }
-        .font-size-control button {
-            padding: 2px 8px;
+
+        /* Light Theme */
+        .light-theme {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e5e5e5;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #ddd;
+            --accent-blue: #0066cc;
+        }
+
+        /* Status and Loading */
+        .status-bar {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            padding: 4px 15px;
             font-size: 12px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .loading {
+            color: var(--accent-blue);
+            font-style: italic;
+        }
+
+        .error-highlight {
+            background-color: rgba(244, 71, 71, 0.2);
+            border-left: 3px solid var(--accent-red);
+        }
+
         /* Scrollbar styling */
         ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
         }
+
         ::-webkit-scrollbar-track {
-            background: #252526;
+            background: var(--bg-secondary);
         }
+
         ::-webkit-scrollbar-thumb {
-            background: #454545;
-            border-radius: 5px;
+            background: var(--text-secondary);
+            border-radius: 6px;
+            border: 2px solid var(--bg-secondary);
         }
+
         ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+            background: var(--text-primary);
         }
-        .header-controls {
+
+        /* Font controls */
+        .font-controls {
             display: flex;
             align-items: center;
+            gap: 5px;
         }
-        .filename {
-            margin-right: 10px;
+
+        .font-controls button {
+            padding: 2px 6px;
+            font-size: 12px;
+            min-width: 24px;
         }
-        #examples-dropdown {
-            background-color: #252526;
-            color: #d4d4d4;
-            border: 1px solid #333;
-            padding: 4px 8px;
+
+        /* File rename input */
+        .file-rename-input {
+            background: var(--bg-primary);
+            border: 1px solid var(--accent-blue);
+            color: var(--text-primary);
+            padding: 2px 6px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            border-radius: 2px;
+        }
+
+        /* Minimap (placeholder for future) */
+        .minimap {
+            width: 100px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: none; /* Hidden for now */
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .controls {
+                padding: 8px;
+                gap: 5px;
+            }
+            
+            .file-tab {
+                min-width: 100px;
+                padding: 6px 12px 6px 8px;
+            }
+            
+            .output-container {
+                height: 200px;
+            }
+        }
+
+        /* Custom context menu (future enhancement) */
+        .context-menu {
+            position: absolute;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
-            margin-left: 10px;
+            padding: 4px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+        }
+
+        .context-menu-item {
+            padding: 6px 12px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .context-menu-item:hover {
+            background: var(--accent-blue);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="editor-container">
-            <div class="panel-header">
-                <div class="header-controls">
-                    <span class="filename">main.py</span>
-                    <select id="examples-dropdown">
-                        <option value="">Select an example</option>
-                        <option value="hello">Hello World</option>
-                        <option value="loop">Loops & Functions</option>
-                        <option value="class">Class Example</option>
-                        <option value="numpy">NumPy Example</option>
+        <!-- File Tabs -->
+        <div class="tabs-container">
+            <div class="file-tabs" id="file-tabs"></div>
+            <button class="new-file-btn" id="new-file-btn" title="New File (Ctrl+N)">+</button>
+        </div>
+
+        <!-- Editor Layout -->
+        <div class="editor-layout">
+            <div class="editor-container">
+                <div class="editor-header">
+                    <div class="header-controls">
+                        <select id="examples-dropdown" title="Load Example">
+                            <option value="">Load Example</option>
+                            <option value="hello">Hello World</option>
+                            <option value="loop">Loops & Functions</option>
+                            <option value="class">Class Example</option>
+                            <option value="numpy">NumPy Example</option>
+                            <option value="web">Web Scraping</option>
+                            <option value="data">Data Analysis</option>
+                        </select>
+                        <div class="font-controls">
+                            <button id="decrease-font" title="Decrease Font Size">A-</button>
+                            <button id="increase-font" title="Increase Font Size">A+</button>
+                        </div>
+                    </div>
+                    <select class="theme-selector" id="theme-selector">
+                        <option value="dark">Dark Theme</option>
+                        <option value="vim">Vim Theme</option>
+                        <option value="light">Light Theme</option>
                     </select>
-                    <div class="font-size-control">
-                        <button id="decrease-font">A-</button>
-                        <button id="increase-font">A+</button>
+                </div>
+                
+                <div class="editor-wrapper">
+                    <div class="line-numbers" id="line-numbers"></div>
+                    <div class="code-editor">
+                        <textarea id="code-input" spellcheck="false" placeholder="Start typing your Python code here..."></textarea>
+                        <pre id="code-highlight"><code class="language-python"></code></pre>
                     </div>
                 </div>
-                <select class="theme-selector" id="theme-selector">
-                    <option value="dark">Dark Theme</option>
-                    <option value="light">Light Theme</option>
-                </select>
-            </div>
-            <div class="editor-wrapper">
-                <div class="line-numbers" id="line-numbers"></div>
-                <textarea id="code-input" spellcheck="false"># Welcome to Python Editor
-"""Author: Basit Ahmad Ganie"""
-
-# Try writing some Python code here
-
-def greet(name):
-    """A simple greeting function"""
-    return f"Hello, {name}!"
-
-print(greet("Basit"))
-
-# Testing newlines and end parameter
-print("This is line 1")
-print("This is line 2")
-
-# Math operations
-x = 5 + 3
-print(f"5 + 3 = {x}")
-
-# List comprehension
-squares = [x**2 for x in range(10)]
-print(f"Squares: {squares}")
-
-
-                </textarea>
-                <pre id="code-highlight"><code class="language-python"></code></pre>
             </div>
         </div>
         
+        <!-- Controls -->
         <div class="controls">
-            <button id="run-btn">▶ Run (Ctrl+Enter)</button>
-            <button id="clear-btn">🗑️ Clear Output</button>
-            <button id="save-btn">💾 Save Code</button>
-            <button id="load-btn">📂 Load Code</button>
-            <button id="share-btn">🔗 Generate Share Link</button>
+            <div class="btn-group">
+                <button id="run-btn" title="Run Code (Ctrl+Enter)">▶️ Run</button>
+                <button id="stop-btn" title="Stop Execution" style="display: none;">⏹ Stop</button>
+            </div>
+            <div class="btn-group">
+                <button id="save-btn" title="Save Current File (Ctrl+S)">💾 Save</button>
+                <button id="load-btn" title="Load File">📂 Load</button>
+                <button id="export-all-btn" title="Export All Files">📦 Export All</button>
+            </div>
+            <div class="btn-group">
+                <button id="share-btn" title="Generate Share Link">🔗 Share</button>
+                <button id="clear-btn" title="Clear Output">🗑️ Clear</button>
+            </div>
             <span id="status" class="status">Initializing Python...</span>
         </div>
         
+        <!-- Output Panel -->
         <div class="output-container">
-            <div class="panel-header">
+            <div class="output-header">
                 <span>Output</span>
-                <button id="copy-output-btn" style="padding: 2px 8px; font-size: 12px;">Copy Output</button>
+                <div class="btn-group">
+                    <button id="copy-output-btn" style="padding: 4px 8px; font-size: 12px;" title="Copy Output">📋 Copy</button>
+                    <button id="clear-output-btn" style="padding: 4px 8px; font-size: 12px;" title="Clear Output">🗑️</button>
+                </div>
             </div>
             <div id="output"></div>
         </div>
         
-        <div id="loading" class="loading">Loading Python runtime...</div>
-        <input type="file" id="file-input" style="display: none">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span id="status-left">Ready</span>
+            <span id="status-right">Python | UTF-8 | Ln 1, Col 1 | shell: basit@localhost</span>
+        </div>
+        
+        <input type="file" id="file-input" style="display: none" accept=".py,.txt,.md">
+        <div id="loading" class="loading" style="display: none;">Loading Python runtime...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
@@ -291,34 +537,136 @@ print(f"Squares: {squares}")
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
 
     <script>
-        // Elements
-        const codeInput = document.getElementById('code-input');
-        const codeHighlight = document.getElementById('code-highlight').querySelector('code');
-        const codeHighlightContainer = document.getElementById('code-highlight');
-        const output = document.getElementById('output');
-        const runBtn = document.getElementById('run-btn');
-        const clearBtn = document.getElementById('clear-btn');
-        const saveBtn = document.getElementById('save-btn');
-        const loadBtn = document.getElementById('load-btn');
-        const shareBtn = document.getElementById('share-btn');
-        const fileInput = document.getElementById('file-input');
-        const loading = document.getElementById('loading');
-        const status = document.getElementById('status');
-        const lineNumbers = document.getElementById('line-numbers');
-        const themeSelector = document.getElementById('theme-selector');
-        const copyOutputBtn = document.getElementById('copy-output-btn');
-        const increaseFontBtn = document.getElementById('increase-font');
-        const decreaseFontBtn = document.getElementById('decrease-font');
-        const examplesDropdown = document.getElementById('examples-dropdown');
-        
-        // Pyodide instance
-        let pyodide;
-        let currentFontSize = 14;
-        
-        // Code examples
+        // File management system
+        class FileManager {
+            constructor() {
+                this.files = {};
+                this.activeFile = null;
+                this.fileCounter = 0;
+                this.createDefaultFile();
+            }
+            
+            createDefaultFile() {
+                const defaultCode = `# Welcome to Enhanced Python Editor
+"""Author: Basit Ahmad Ganie"""
+
+# Try writing some Python code here
+def greet(name):
+    """A simple greeting function"""
+    return f"Hello, {name}!"
+
+print(greet("Basit"))
+
+# Testing multiple lines
+for i in range(5):
+    print(f"Count: {i}")
+
+# Math operations
+x = 5 + 3
+print(f"5 + 3 = {x}")
+
+# List comprehension
+squares = [x**2 for x in range(10)]
+print(f"Squares: {squares}")
+`;
+                this.createFile('main.py', defaultCode);
+                this.setActiveFile('main.py');
+            }
+            
+            createFile(name = null, content = '') {
+                if (!name) {
+                    this.fileCounter++;
+                    name = `untitled-${this.fileCounter}.py`;
+                }
+                
+                // Ensure unique name
+                let finalName = name;
+                let counter = 1;
+                while (this.files[finalName]) {
+                    const parts = name.split('.');
+                    const ext = parts.pop();
+                    const baseName = parts.join('.');
+                    finalName = `${baseName}-${counter}.${ext}`;
+                    counter++;
+                }
+                
+                this.files[finalName] = {
+                    content: content,
+                    modified: false,
+                    cursor: { line: 1, col: 1 }
+                };
+                
+                return finalName;
+            }
+            
+            deleteFile(name) {
+                if (Object.keys(this.files).length <= 1) {
+                    alert('Cannot delete the last file');
+                    return false;
+                }
+                
+                delete this.files[name];
+                
+                if (this.activeFile === name) {
+                    const remainingFiles = Object.keys(this.files);
+                    this.setActiveFile(remainingFiles[0]);
+                }
+                
+                return true;
+            }
+            
+            setActiveFile(name) {
+                if (!this.files[name]) return false;
+                
+                // Save current cursor position
+                if (this.activeFile && this.files[this.activeFile]) {
+                    const textarea = document.getElementById('code-input');
+                    this.files[this.activeFile].cursor = this.getCursorPosition();
+                }
+                
+                this.activeFile = name;
+                return true;
+            }
+            
+            getActiveFile() {
+                return this.files[this.activeFile];
+            }
+            
+            updateFileContent(name, content) {
+                if (this.files[name]) {
+                    this.files[name].content = content;
+                    this.files[name].modified = true;
+                }
+            }
+            
+            getCursorPosition() {
+                const textarea = document.getElementById('code-input');
+                const start = textarea.selectionStart;
+                const text = textarea.value.substring(0, start);
+                const lines = text.split('\n');
+                return {
+                    line: lines.length,
+                    col: lines[lines.length - 1].length + 1
+                };
+            }
+            
+            renameFile(oldName, newName) {
+                if (!this.files[oldName] || this.files[newName]) return false;
+                
+                this.files[newName] = this.files[oldName];
+                delete this.files[oldName];
+                
+                if (this.activeFile === oldName) {
+                    this.activeFile = newName;
+                }
+                
+                return true;
+            }
+        }
+
+        // Enhanced code examples
         const codeExamples = {
             hello: `# Hello World Example
-# Author: Basit Ahmad Ganie
 print("Hello, World!")
 
 # String manipulation
@@ -338,7 +686,6 @@ print("one", end=" ")
 print("line.")`,
 
             loop: `# Loops and Functions Example
-
 def factorial(n):
     """Calculate factorial of n"""
     if n == 0 or n == 1:
@@ -364,7 +711,6 @@ while True:
         break`,
 
             class: `# Class Example
-
 class Person:
     def __init__(self, name, age):
         self.name = name
@@ -379,19 +725,18 @@ class Person:
 
 # Create some people
 basit = Person("Basit", 20)
-max = Person("Max", 19)
+max_e = Person("Max", 19)
 
 # Use the Person class
 print(basit.greet())
-print(max.greet())
-
+print(max_e.greet())
 print(basit.have_birthday())
-print(max.have_birthday())`,
+print(max_e.have_birthday())`,
 
             numpy: `# NumPy Example
 import numpy as np
 
-# Create a numpy array
+# Create arrays
 arr = np.array([1, 2, 3, 4, 5])
 print(f"Array: {arr}")
 print(f"Mean: {np.mean(arr)}")
@@ -404,63 +749,283 @@ matrix2 = np.array([[5, 6], [7, 8]])
 print(f"Matrix 1:\\n{matrix1}")
 print(f"Matrix 2:\\n{matrix2}")
 print(f"Addition:\\n{matrix1 + matrix2}")
-print(f"Multiplication:\\n{np.matmul(matrix1, matrix2)}")
+print(f"Dot product:\\n{np.dot(matrix1, matrix2)}")
 
 # Random numbers
 random_array = np.random.rand(3, 3)
 print(f"Random 3x3 matrix:\\n{random_array}")
-`
+
+# Linear algebra
+eigenvals, eigenvecs = np.linalg.eig(matrix1)
+print(f"Eigenvalues: {eigenvals}")`,
+
+            web: `# Web Scraping Example (simulated)
+# Note: This is a demonstration of web scraping concepts
+# In a real environment, you would need requests and BeautifulSoup
+
+# Simulated web data
+html_content = '''
+<html>
+<body>
+    <h1>Welcome to Python</h1>
+    <p>This is a paragraph.</p>
+    <ul>
+        <li>Item 1</li>
+        <li>Item 2</li>
+        <li>Item 3</li>
+    </ul>
+</body>
+</html>
+'''
+
+# Simple HTML parsing (basic example)
+import re
+
+# Extract title
+title_match = re.search(r'<h1>(.*?)</h1>', html_content)
+if title_match:
+    print(f"Title: {title_match.group(1)}")
+
+# Extract list items
+items = re.findall(r'<li>(.*?)</li>', html_content)
+print("List items:")
+for i, item in enumerate(items, 1):
+    print(f"  {i}. {item}")`,
+
+            data: `# Data Analysis Example
+import numpy as np
+
+# Create sample data
+data = np.array([23, 45, 56, 78, 32, 67, 89, 12, 34, 56, 78, 90, 23, 45])
+print(f"Sample data: {data}")
+
+# Basic statistics
+print(f"Mean: {np.mean(data):.2f}")
+print(f"Median: {np.median(data):.2f}")
+print(f"Standard Deviation: {np.std(data):.2f}")
+print(f"Min: {np.min(data)}")
+print(f"Max: {np.max(data)}")
+
+# Quartiles
+q1 = np.percentile(data, 25)
+q3 = np.percentile(data, 75)
+print(f"Q1: {q1:.2f}")
+print(f"Q3: {q3:.2f}")
+print(f"IQR: {q3 - q1:.2f}")
+
+# Data transformation
+normalized_data = (data - np.mean(data)) / np.std(data)
+print(f"Normalized data: {normalized_data}")
+
+# Simple correlation (with itself, just for demo)
+correlation = np.corrcoef(data, data**2)[0, 1]
+print(f"Correlation with squares: {correlation:.3f}")`
         };
-        
+
+        // Global variables
+        let pyodide;
+        let currentFontSize = 14;
+        let fileManager;
+        let isRunning = false;
+
+        // DOM elements
+        const elements = {
+            codeInput: document.getElementById('code-input'),
+            codeHighlight: document.getElementById('code-highlight').querySelector('code'),
+            output: document.getElementById('output'),
+            lineNumbers: document.getElementById('line-numbers'),
+            fileTabs: document.getElementById('file-tabs'),
+            statusLeft: document.getElementById('status-left'),
+            statusRight: document.getElementById('status-right'),
+            themeSelector: document.getElementById('theme-selector'),
+            examplesDropdown: document.getElementById('examples-dropdown')
+        };
+
+        // File tab management
+        function renderFileTabs() {
+            elements.fileTabs.innerHTML = '';
+            
+            Object.keys(fileManager.files).forEach(fileName => {
+                const tab = document.createElement('div');
+                tab.className = `file-tab ${fileName === fileManager.activeFile ? 'active' : ''}`;
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = fileName + (fileManager.files[fileName].modified ? '*' : '');
+                nameSpan.className = 'file-name';
+                
+                const closeBtn = document.createElement('span');
+                closeBtn.className = 'close-btn';
+                closeBtn.innerHTML = '×';
+                closeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    closeFile(fileName);
+                };
+                
+                tab.appendChild(nameSpan);
+                tab.appendChild(closeBtn);
+                
+                tab.onclick = () => switchToFile(fileName);
+                
+                // Double click to rename
+                nameSpan.ondblclick = (e) => {
+                    e.stopPropagation();
+                    startFileRename(fileName, nameSpan);
+                };
+                
+                elements.fileTabs.appendChild(tab);
+            });
+        }
+
+        function switchToFile(fileName) {
+            if (fileManager.setActiveFile(fileName)) {
+                const file = fileManager.getActiveFile();
+                elements.codeInput.value = file.content;
+                
+                // Restore cursor position
+                setTimeout(() => {
+                    const pos = getTextPosition(file.cursor.line, file.cursor.col);
+                    elements.codeInput.setSelectionRange(pos, pos);
+                    elements.codeInput.focus();
+                }, 0);
+                
+                updateEditor();
+                renderFileTabs();
+            }
+        }
+
+        function closeFile(fileName) {
+            if (fileManager.deleteFile(fileName)) {
+                renderFileTabs();
+                switchToFile(fileManager.activeFile);
+            }
+        }
+
+        function createNewFile() {
+            const fileName = fileManager.createFile();
+            switchToFile(fileName);
+            renderFileTabs();
+        }
+
+        function startFileRename(fileName, nameElement) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'file-rename-input';
+            input.value = fileName;
+            input.style.width = '120px';
+            
+            nameElement.replaceWith(input);
+            input.focus();
+            input.select();
+            
+            function finishRename() {
+                const newName = input.value.trim();
+                if (newName && newName !== fileName && !fileManager.files[newName]) {
+                    if (fileManager.renameFile(fileName, newName)) {
+                        renderFileTabs();
+                        return;
+                    }
+                }
+                renderFileTabs();
+            }
+            
+            input.onblur = finishRename;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    finishRename();
+                } else if (e.key === 'Escape') {
+                    renderFileTabs();
+                }
+            };
+        }
+
+        // Helper function to convert line/col to text position
+        function getTextPosition(line, col) {
+            const lines = elements.codeInput.value.split('\n');
+            let pos = 0;
+            for (let i = 0; i < Math.min(line - 1, lines.length); i++) {
+                pos += lines[i].length + 1; // +1 for newline
+            }
+            pos += Math.min(col - 1, lines[line - 1]?.length || 0);
+            return pos;
+        }
+
         // Update line numbers and syntax highlighting
         function updateEditor() {
-            const code = codeInput.value;
+            const code = elements.codeInput.value;
             const lines = code.split('\n');
             
-            // Update line numbers - no limit on number of lines
-            lineNumbers.innerHTML = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
+            // Update line numbers with proper alignment
+            const lineCount = Math.max(lines.length, 1);
+            const maxDigits = lineCount.toString().length;
+            
+            elements.lineNumbers.innerHTML = lines.map((_, i) => {
+                const lineNum = (i + 1).toString().padStart(maxDigits, ' ');
+                return `${lineNum}`;
+            }).join('\n');
             
             // Update syntax highlighting
-            codeHighlight.textContent = code;
-            Prism.highlightElement(codeHighlight);
+            elements.codeHighlight.textContent = code;
+            Prism.highlightElement(elements.codeHighlight);
             
             // Sync scroll positions
             syncScroll();
-        }
-        
-        // Sync scrolling between code input and highlighting
-        function syncScroll() {
-            // Two-way sync between code input and highlight
-            codeHighlightContainer.scrollTop = codeInput.scrollTop;
-            codeHighlightContainer.scrollLeft = codeInput.scrollLeft;
             
-            // Ensure line numbers scroll vertically with the editor
-            lineNumbers.scrollTop = codeInput.scrollTop;
+            // Update file content
+            if (fileManager.activeFile) {
+                fileManager.updateFileContent(fileManager.activeFile, code);
+                renderFileTabs();
+            }
+            
+            // Update cursor position in status bar
+            updateCursorStatus();
         }
-        
+
+        function syncScroll() {
+            const codeHighlightContainer = document.getElementById('code-highlight');
+            codeHighlightContainer.scrollTop = elements.codeInput.scrollTop;
+            codeHighlightContainer.scrollLeft = elements.codeInput.scrollLeft;
+            elements.lineNumbers.scrollTop = elements.codeInput.scrollTop;
+        }
+
+        function updateCursorStatus() {
+            const pos = fileManager.getCursorPosition();
+            const charCount = elements.codeInput.value.length;
+            const selectedText = elements.codeInput.value.substring(
+                elements.codeInput.selectionStart, 
+                elements.codeInput.selectionEnd
+            );
+            
+            let statusText = `Python | UTF-8 | Ln ${pos.line}, Col ${pos.col}`;
+            if (selectedText.length > 0) {
+                statusText += ` | ${selectedText.length} selected`;
+            }
+            statusText += ` | ${charCount} chars`;
+            
+            elements.statusRight.textContent = statusText;
+        }
+
         // Initialize Pyodide
         async function initializePyodide() {
-            loading.style.display = 'block';
-            status.textContent = 'Initializing Python runtime...';
+            const loadingEl = document.getElementById('loading');
+            loadingEl.style.display = 'block';
+            elements.statusLeft.textContent = 'Initializing Python runtime...';
             
             try {
                 pyodide = await loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
                 });
                 
-                // Fix for print function newline and end parameter
-                // Create a JavaScript function to update the output element
+                // Setup output redirection
                 function updateOutput(text) {
-                    output.textContent = text;
-                    output.scrollTop = output.scrollHeight;
+                    elements.output.textContent = text;
+                    elements.output.scrollTop = elements.output.scrollHeight;
                 }
                 
-                // Register the JS function with Pyodide
                 pyodide.globals.set("js_update_output", updateOutput);
                 
-                // Set up the Python stdout/stderr redirection
                 await pyodide.runPythonAsync(`
                     import sys
+                    import io
                     
                     class CustomOutput:
                         def __init__(self):
@@ -473,263 +1038,399 @@ print(f"Random 3x3 matrix:\\n{random_array}")
                         
                         def flush(self):
                             pass
+                        
+                        def clear(self):
+                            self.buffer = ""
+                            js_update_output(self.buffer)
                     
-                    # Replace standard output and standard error
-                    sys.stdout = CustomOutput()
-                    sys.stderr = CustomOutput()
+                    stdout_capture = CustomOutput()
+                    stderr_capture = CustomOutput()
+                    sys.stdout = stdout_capture
+                    sys.stderr = stderr_capture
                 `);
                 
-                await pyodide.loadPackagesFromImports("import numpy");
-                status.textContent = 'Ready';
-                runBtn.disabled = false;
+                // Load common packages
+                await pyodide.loadPackage(['numpy', 'micropip']);
+                
+                elements.statusLeft.textContent = 'Ready';
+                document.getElementById('run-btn').disabled = false;
+                
             } catch (err) {
-                status.textContent = 'Failed to initialize';
-                output.textContent = `Error: ${err}\n`;
+                elements.statusLeft.textContent = 'Failed to initialize';
+                elements.output.textContent = `Initialization Error: ${err}\n`;
+                console.error('Pyodide initialization failed:', err);
             } finally {
-                loading.style.display = 'none';
+                loadingEl.style.display = 'none';
             }
         }
-        
+
         // Run Python code
         async function runPython() {
-            const code = codeInput.value;
-            status.textContent = 'Running...';
+            if (isRunning) return;
+            
+            const code = elements.codeInput.value;
+            if (!code.trim()) return;
+            
+            isRunning = true;
+            elements.statusLeft.textContent = 'Running...';
+            document.getElementById('run-btn').style.display = 'none';
+            document.getElementById('stop-btn').style.display = 'inline-flex';
             
             try {
-                // Clear previous output by setting an empty buffer in Python
+                // Clear previous output
                 await pyodide.runPythonAsync(`
-                    sys.stdout.buffer = ""
-                    sys.stderr.buffer = ""
+                    sys.stdout.clear()
+                    sys.stderr.clear()
                 `);
                 
-                // Run the user's code
+                // Run user code
                 await pyodide.runPythonAsync(code);
-                status.textContent = 'Execution completed';
+                elements.statusLeft.textContent = 'Execution completed';
+                
             } catch (err) {
-                // Display the error message directly in the output div
-                output.textContent += `\nError: ${err}\n`;
-                status.textContent = 'Execution failed';
+                // Handle Python errors
+                elements.output.textContent += `\n❌ Error: ${err}\n`;
+                elements.statusLeft.textContent = 'Execution failed';
                 highlightErrorLine(err);
+                
+            } finally {
+                isRunning = false;
+                document.getElementById('run-btn').style.display = 'inline-flex';
+                document.getElementById('stop-btn').style.display = 'none';
             }
         }
-        
-        // Highlight error line
+
+        function stopExecution() {
+            // Note: Actually stopping Python execution is complex
+            // This is a placeholder for the UI
+            isRunning = false;
+            document.getElementById('run-btn').style.display = 'inline-flex';
+            document.getElementById('stop-btn').style.display = 'none';
+            elements.statusLeft.textContent = 'Execution stopped';
+        }
+
         function highlightErrorLine(error) {
-            // Remove previous error highlights
-            codeInput.classList.remove('error-line');
+            // Remove previous highlights
+            const lines = elements.lineNumbers.querySelectorAll('.error-highlight');
+            lines.forEach(line => line.classList.remove('error-highlight'));
             
-            const match = error.message.match(/line (\d+)/);
+            // Try to extract line number from error
+            const match = error.toString().match(/line (\d+)/);
             if (match) {
                 const lineNum = parseInt(match[1]);
-                const lines = codeInput.value.split('\n');
-                
-                // Add error class to the specific line
-                if (lineNum > 0 && lineNum <= lines.length) {
-                    // Highlight the line by creating a temporary element
-                    const tempHTML = lines.map((line, i) => 
-                        (i === lineNum - 1) ? 
-                        `<div class="error-line">${line}</div>` : 
-                        `<div>${line}</div>`
-                    ).join('');
+                const lineElements = elements.lineNumbers.children;
+                if (lineElements[lineNum - 1]) {
+                    lineElements[lineNum - 1].classList.add('error-highlight');
                     
                     // Scroll to error line
-                    const lineHeight = parseInt(window.getComputedStyle(codeInput).lineHeight);
-                    codeInput.scrollTop = (lineNum - 3) * lineHeight; // Show a couple lines above the error
+                    const lineHeight = 21; // matches CSS line-height
+                    elements.codeInput.scrollTop = Math.max(0, (lineNum - 3) * lineHeight);
                 }
             }
         }
-        
-        // Save code to file
-        function saveToFile() {
-            const code = codeInput.value;
-            const blob = new Blob([code], {type: 'text/plain'});
+
+        // File operations
+        function saveCurrentFile() {
+            const fileName = fileManager.activeFile;
+            const content = elements.codeInput.value;
+            const blob = new Blob([content], { type: 'text/plain' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = 'python_code.py';
+            a.download = fileName;
             a.click();
             URL.revokeObjectURL(a.href);
-            status.textContent = 'Code saved to file';
+            
+            // Mark file as saved
+            fileManager.files[fileName].modified = false;
+            renderFileTabs();
+            elements.statusLeft.textContent = `Saved ${fileName}`;
         }
-        
-        // Load code from file
+
         function loadFromFile() {
-            fileInput.click();
+            document.getElementById('file-input').click();
         }
-        
-        fileInput.addEventListener('change', (e) => {
+
+        function exportAllFiles() {
+            const zip = {};
+            Object.keys(fileManager.files).forEach(fileName => {
+                zip[fileName] = fileManager.files[fileName].content;
+            });
+            
+            const content = JSON.stringify(zip, null, 2);
+            const blob = new Blob([content], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'python_project.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            
+            elements.statusLeft.textContent = 'All files exported';
+        }
+
+        // File input handler
+        document.getElementById('file-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    codeInput.value = e.target.result;
-                    updateEditor();
-                    status.textContent = 'Code loaded from file';
+                    const content = e.target.result;
+                    
+                    // Try to parse as JSON (exported project)
+                    try {
+                        const parsed = JSON.parse(content);
+                        if (typeof parsed === 'object') {
+                            // Load multiple files
+                            Object.keys(parsed).forEach(fileName => {
+                                fileManager.createFile(fileName, parsed[fileName]);
+                            });
+                            switchToFile(Object.keys(parsed)[0]);
+                            renderFileTabs();
+                            elements.statusLeft.textContent = 'Project loaded';
+                            return;
+                        }
+                    } catch (e) {
+                        // Not JSON, treat as single file
+                    }
+                    
+                    // Single file
+                    const fileName = file.name || 'imported.py';
+                    const newFileName = fileManager.createFile(fileName, content);
+                    switchToFile(newFileName);
+                    renderFileTabs();
+                    elements.statusLeft.textContent = `Loaded ${fileName}`;
                 };
                 reader.readAsText(file);
             }
         });
-        
-        // Share code (generate URL with code as parameter)
+
+        // Share functionality
         function shareCode() {
-            const code = encodeURIComponent(codeInput.value);
-            const url = `${window.location.href.split('?')[0]}?code=${code}`;
+            const allFiles = {};
+            Object.keys(fileManager.files).forEach(fileName => {
+                allFiles[fileName] = fileManager.files[fileName].content;
+            });
             
-            // Copy to clipboard
+            const data = {
+                files: allFiles,
+                active: fileManager.activeFile
+            };
+            
+            const encoded = encodeURIComponent(JSON.stringify(data));
+            const url = `${window.location.href.split('?')[0]}?data=${encoded}`;
+            
             navigator.clipboard.writeText(url).then(() => {
-                status.textContent = 'Share link copied to clipboard';
+                elements.statusLeft.textContent = 'Share link copied to clipboard';
                 setTimeout(() => {
-                    status.textContent = 'Ready';
+                    elements.statusLeft.textContent = 'Ready';
                 }, 3000);
             }).catch(err => {
-                status.textContent = 'Failed to copy share link';
-                console.error('Failed to copy: ', err);
+                elements.statusLeft.textContent = 'Failed to copy share link';
+                console.error('Failed to copy:', err);
             });
         }
-        
-        // Change theme
+
+        // Theme management
         function changeTheme(theme) {
-            const isDark = theme === 'dark';
-            document.body.style.backgroundColor = isDark ? '#1e1e1e' : '#f5f5f5';
-            document.body.style.color = isDark ? '#d4d4d4' : '#333';
+            // Remove existing theme classes
+            document.body.classList.remove('vim-theme', 'light-theme');
             
-            const containers = document.querySelectorAll('.editor-container, .output-container');
-            containers.forEach(container => {
-                container.style.backgroundColor = isDark ? '#1e1e1e' : '#ffffff';
-                container.style.boxShadow = isDark ? '0 2px 10px rgba(0,0,0,0.3)' : '0 2px 10px rgba(0,0,0,0.1)';
-            });
+            // Apply new theme
+            if (theme === 'vim') {
+                document.body.classList.add('vim-theme');
+            } else if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            }
             
-            const headers = document.querySelectorAll('.panel-header');
-            headers.forEach(header => {
-                header.style.backgroundColor = isDark ? '#252526' : '#e5e5e5';
-                header.style.color = isDark ? '#d4d4d4' : '#333';
-                header.style.borderBottom = isDark ? '1px solid #333' : '1px solid #ccc';
-            });
-            
-            const editor = document.getElementById('code-highlight');
-            editor.style.backgroundColor = isDark ? '#1e1e1e' : '#ffffff';
-            editor.style.color = isDark ? '#d4d4d4' : '#333';
-            
-            const out = document.getElementById('output');
-            out.style.backgroundColor = isDark ? '#1e1e1e' : '#ffffff';
-            out.style.color = isDark ? '#d4d4d4' : '#333';
-            
-            const lineNums = document.getElementById('line-numbers');
-            lineNums.style.backgroundColor = isDark ? '#1e1e1e' : '#f0f0f0';
-            lineNums.style.color = isDark ? '#858585' : '#999';
-            lineNums.style.borderRight = isDark ? '1px solid #333' : '1px solid #ccc';
-            
-            // Need to reapply syntax highlighting with new theme
-            updateEditor();
+            // Update syntax highlighting
+            setTimeout(updateEditor, 0);
+            elements.statusLeft.textContent = `Theme changed to ${theme}`;
         }
-        
-        // Change font size
+
+        // Font size controls
         function changeFontSize(delta) {
-            currentFontSize += delta;
-            
-            // Keep size within reasonable limits
-            if (currentFontSize < 10) currentFontSize = 10;
-            if (currentFontSize > 24) currentFontSize = 24;
+            currentFontSize = Math.max(10, Math.min(24, currentFontSize + delta));
             
             const size = `${currentFontSize}px`;
-            codeInput.style.fontSize = size;
-            codeHighlight.style.fontSize = size;
-            lineNumbers.style.fontSize = size;
-            output.style.fontSize = size;
+            elements.codeInput.style.fontSize = size;
+            elements.codeHighlight.style.fontSize = size;
+            elements.lineNumbers.style.fontSize = size;
+            elements.output.style.fontSize = size;
+            
+            // Update line height proportionally
+            const lineHeight = Math.round(currentFontSize * 1.5);
+            elements.codeInput.style.lineHeight = `${lineHeight}px`;
+            elements.codeHighlight.style.lineHeight = `${lineHeight}px`;
+            elements.lineNumbers.style.lineHeight = `${lineHeight}px`;
             
             updateEditor();
         }
-        
-        // Copy output to clipboard
-        function copyOutputToClipboard() {
-            navigator.clipboard.writeText(output.textContent).then(() => {
-                status.textContent = 'Output copied to clipboard';
-                setTimeout(() => {
-                    status.textContent = 'Ready';
-                }, 3000);
+
+        // Copy output
+        function copyOutput() {
+            navigator.clipboard.writeText(elements.output.textContent).then(() => {
+                elements.statusLeft.textContent = 'Output copied to clipboard';
+                setTimeout(() => elements.statusLeft.textContent = 'Ready', 3000);
             }).catch(err => {
-                status.textContent = 'Failed to copy output';
-                console.error('Failed to copy: ', err);
+                elements.statusLeft.textContent = 'Failed to copy output';
+                console.error('Failed to copy:', err);
             });
         }
-        
-        // Load a code example
+
+        // Clear output
+        function clearOutput() {
+            elements.output.textContent = '';
+            if (pyodide) {
+                pyodide.runPythonAsync(`
+                    sys.stdout.clear()
+                    sys.stderr.clear()
+                `);
+            }
+            elements.statusLeft.textContent = 'Output cleared';
+        }
+
+        // Load example
         function loadExample() {
-            const example = examplesDropdown.value;
+            const example = elements.examplesDropdown.value;
             if (example && codeExamples[example]) {
-                codeInput.value = codeExamples[example];
+                elements.codeInput.value = codeExamples[example];
                 updateEditor();
-                status.textContent = 'Example loaded';
-                // Reset dropdown
-                examplesDropdown.value = '';
+                elements.statusLeft.textContent = 'Example loaded';
+                elements.examplesDropdown.value = '';
             }
         }
-        
-        // Load code from URL param if present
-        function loadCodeFromURL() {
+
+        // Load data from URL
+        function loadFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            if (code) {
-                codeInput.value = decodeURIComponent(code);
-                updateEditor();
+            const data = urlParams.get('data');
+            if (data) {
+                try {
+                    const parsed = JSON.parse(decodeURIComponent(data));
+                    if (parsed.files) {
+                        // Clear existing files
+                        fileManager.files = {};
+                        
+                        // Load files
+                        Object.keys(parsed.files).forEach(fileName => {
+                            fileManager.createFile(fileName, parsed.files[fileName]);
+                        });
+                        
+                        // Set active file
+                        if (parsed.active && fileManager.files[parsed.active]) {
+                            switchToFile(parsed.active);
+                        } else {
+                            switchToFile(Object.keys(fileManager.files)[0]);
+                        }
+                        
+                        renderFileTabs();
+                        elements.statusLeft.textContent = 'Project loaded from URL';
+                    }
+                } catch (e) {
+                    console.error('Failed to load from URL:', e);
+                }
             }
         }
-        
+
         // Event listeners
-        runBtn.addEventListener('click', runPython);
-        clearBtn.addEventListener('click', () => {
-            output.textContent = '';
-            status.textContent = 'Output cleared';
-        });
-        saveBtn.addEventListener('click', saveToFile);
-        loadBtn.addEventListener('click', loadFromFile);
-        shareBtn.addEventListener('click', shareCode);
-        themeSelector.addEventListener('change', () => changeTheme(themeSelector.value));
-        increaseFontBtn.addEventListener('click', () => changeFontSize(1));
-        decreaseFontBtn.addEventListener('click', () => changeFontSize(-1));
-        copyOutputBtn.addEventListener('click', copyOutputToClipboard);
-        examplesDropdown.addEventListener('change', loadExample);
+        document.getElementById('run-btn').addEventListener('click', runPython);
+        document.getElementById('stop-btn').addEventListener('click', stopExecution);
+        document.getElementById('save-btn').addEventListener('click', saveCurrentFile);
+        document.getElementById('load-btn').addEventListener('click', loadFromFile);
+        document.getElementById('export-all-btn').addEventListener('click', exportAllFiles);
+        document.getElementById('share-btn').addEventListener('click', shareCode);
+        document.getElementById('clear-btn').addEventListener('click', clearOutput);
+        document.getElementById('clear-output-btn').addEventListener('click', clearOutput);
+        document.getElementById('copy-output-btn').addEventListener('click', copyOutput);
+        document.getElementById('new-file-btn').addEventListener('click', createNewFile);
+        document.getElementById('increase-font').addEventListener('click', () => changeFontSize(1));
+        document.getElementById('decrease-font').addEventListener('click', () => changeFontSize(-1));
+
+        elements.themeSelector.addEventListener('change', () => changeTheme(elements.themeSelector.value));
+        elements.examplesDropdown.addEventListener('change', loadExample);
         
-        // Handle editor changes
-        codeInput.addEventListener('input', updateEditor);
-        
-        // Improved scroll handling with both input and scroll events
-        codeInput.addEventListener('scroll', syncScroll);
-        codeInput.addEventListener('input', syncScroll);
-        
-        // Add scroll listener to the highlighted code container to sync back
-        codeHighlightContainer.addEventListener('scroll', () => {
-            if (codeInput.scrollTop !== codeHighlightContainer.scrollTop) {
-                codeInput.scrollTop = codeHighlightContainer.scrollTop;
-                lineNumbers.scrollTop = codeHighlightContainer.scrollTop;
-            }
-        });
-        
-        // Ctrl+Enter shortcut
-        codeInput.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                runPython();
+        // Editor event listeners
+        elements.codeInput.addEventListener('input', updateEditor);
+        elements.codeInput.addEventListener('scroll', syncScroll);
+        elements.codeInput.addEventListener('keyup', updateCursorStatus);
+        elements.codeInput.addEventListener('click', updateCursorStatus);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        runPython();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        saveCurrentFile();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        createNewFile();
+                        break;
+                    case 'o':
+                        e.preventDefault();
+                        loadFromFile();
+                        break;
+                    case '=':
+                    case '+':
+                        e.preventDefault();
+                        changeFontSize(1);
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        changeFontSize(-1);
+                        break;
+                }
             }
             
-            // Handle Tab key
-            if (e.key === 'Tab') {
+            // Tab key for code input
+            if (e.target === elements.codeInput && e.key === 'Tab') {
                 e.preventDefault();
-                const start = codeInput.selectionStart;
-                const end = codeInput.selectionEnd;
+                const start = elements.codeInput.selectionStart;
+                const end = elements.codeInput.selectionEnd;
                 
-                // Insert 4 spaces
-                codeInput.value = codeInput.value.substring(0, start) + '    ' + codeInput.value.substring(end);
+                if (e.shiftKey) {
+                    // Shift+Tab: Unindent
+                    const lines = elements.codeInput.value.split('\n');
+                    const startLine = elements.codeInput.value.substring(0, start).split('\n').length - 1;
+                    const endLine = elements.codeInput.value.substring(0, end).split('\n').length - 1;
+                    
+                    for (let i = startLine; i <= endLine; i++) {
+                        if (lines[i].startsWith('    ')) {
+                            lines[i] = lines[i].substring(4);
+                        }
+                    }
+                    
+                    elements.codeInput.value = lines.join('\n');
+                } else {
+                    // Tab: Indent
+                    elements.codeInput.value = elements.codeInput.value.substring(0, start) + '    ' + elements.codeInput.value.substring(end);
+                    elements.codeInput.selectionStart = elements.codeInput.selectionEnd = start + 4;
+                }
                 
-                // Move cursor
-                codeInput.selectionStart = codeInput.selectionEnd = start + 4;
                 updateEditor();
             }
         });
-        
-        // Initialize
-        initializePyodide();
-        updateEditor();
-        loadCodeFromURL();
+
+        // Initialize everything
+        function initialize() {
+            fileManager = new FileManager();
+            renderFileTabs();
+            updateEditor();
+            loadFromURL();
+            initializePyodide();
+            
+            // Set initial focus
+            elements.codeInput.focus();
+            
+            console.log('Enhanced Python Editor initialized');
+        }
+
+        // Start the application
+        initialize();
     </script>
 </body>
 </html>
