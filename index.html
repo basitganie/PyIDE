@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PyTerminal - Enhanced Python IDE</title>
+    <title>PyTerminal Pro - Full Python IDE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    
     <style>
         :root {
             --bg-void: #0a0e14;
@@ -30,11 +34,6 @@
             
             --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.5);
             --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.3);
-            --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.2);
-            
-            --radius-sm: 6px;
-            --radius-md: 8px;
-            --radius-lg: 12px;
         }
 
         * {
@@ -44,26 +43,11 @@
         }
 
         body {
-            font-family: 'JetBrains Mono', 'Space Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             background: linear-gradient(135deg, var(--bg-void) 0%, #0d1117 100%);
             color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
-            position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(88, 209, 235, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(188, 140, 255, 0.03) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
         }
 
         .app-container {
@@ -73,10 +57,8 @@
                 "titlebar titlebar"
                 "sidebar main"
                 "sidebar output";
-            grid-template-columns: 280px 1fr;
-            grid-template-rows: 48px 1fr 300px;
-            position: relative;
-            z-index: 1;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 50px 1fr 300px;
         }
 
         /* Titlebar */
@@ -87,42 +69,37 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 16px;
-            backdrop-filter: blur(12px);
+            padding: 0 20px;
         }
 
         .titlebar-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
         }
 
         .app-logo {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.5px;
         }
 
-        .current-file-display {
+        .current-path {
             color: var(--text-secondary);
             font-size: 13px;
-            padding: 4px 12px;
+            padding: 5px 12px;
             background: var(--bg-surface);
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
         }
 
         .titlebar-controls {
             display: flex;
-            gap: 8px;
-            align-items: center;
+            gap: 10px;
         }
 
-        /* Sidebar - File Explorer */
+        /* Sidebar */
         .sidebar {
             grid-area: sidebar;
             background: var(--bg-surface);
@@ -133,11 +110,8 @@
         }
 
         .sidebar-header {
-            padding: 12px 16px;
+            padding: 15px;
             border-bottom: 1px solid var(--border-subtle);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
             background: var(--bg-elevated);
         }
 
@@ -147,37 +121,64 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .path-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .path-segment {
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .path-segment:hover {
+            background: var(--bg-overlay);
+            color: var(--accent-cyan);
+        }
+
+        .sidebar-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
         }
 
         .file-tree {
             flex: 1;
             overflow-y: auto;
-            padding: 8px;
+            padding: 10px;
         }
 
         .tree-item {
-            padding: 6px 12px;
+            padding: 8px 12px;
             margin: 2px 0;
             cursor: pointer;
-            border-radius: var(--radius-sm);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 13px;
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            transition: all 0.15s;
+            user-select: none;
         }
 
         .tree-item:hover {
             background: var(--bg-overlay);
-            transform: translateX(2px);
         }
 
         .tree-item.active {
             background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
             color: var(--bg-void);
             font-weight: 600;
-            box-shadow: var(--shadow-medium);
         }
 
         .tree-item.folder {
@@ -185,22 +186,21 @@
             color: var(--accent-orange);
         }
 
-        .tree-item.folder.collapsed::before {
-            content: '▶';
-            font-size: 10px;
-            margin-right: 4px;
+        .tree-item-icon {
+            font-size: 16px;
+            min-width: 20px;
+        }
+
+        .tree-item.folder .tree-item-icon {
             transition: transform 0.2s;
         }
 
-        .tree-item.folder.expanded::before {
-            content: '▼';
-            font-size: 10px;
-            margin-right: 4px;
-            transition: transform 0.2s;
+        .tree-item.folder.expanded .tree-item-icon {
+            transform: rotate(90deg);
         }
 
         .tree-item-children {
-            margin-left: 20px;
+            margin-left: 25px;
             display: none;
         }
 
@@ -208,11 +208,7 @@
             display: block;
         }
 
-        .tree-icon {
-            font-size: 16px;
-        }
-
-        /* Main Editor Area */
+        /* Main Editor */
         .main-area {
             grid-area: main;
             background: var(--bg-void);
@@ -235,7 +231,7 @@
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
             border-bottom: none;
-            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            border-radius: 6px 6px 0 0;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -243,8 +239,7 @@
             font-size: 13px;
             color: var(--text-secondary);
             transition: all 0.2s;
-            min-width: 120px;
-            position: relative;
+            min-width: 140px;
         }
 
         .tab:hover {
@@ -278,13 +273,13 @@
 
         .editor-container {
             flex: 1;
-            position: relative;
             overflow: hidden;
         }
 
-        #monaco-editor {
-            width: 100%;
+        .CodeMirror {
             height: 100%;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
         }
 
         /* Output Panel */
@@ -294,11 +289,10 @@
             border-top: 1px solid var(--border-subtle);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
 
         .output-header {
-            padding: 10px 16px;
+            padding: 12px 16px;
             background: var(--bg-elevated);
             border-bottom: 1px solid var(--border-subtle);
             display: flex;
@@ -307,19 +301,12 @@
         }
 
         .output-title {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
             color: var(--text-secondary);
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .output-controls {
-            display: flex;
-            gap: 6px;
         }
 
         .output-content {
@@ -338,59 +325,33 @@
             color: var(--accent-red);
         }
 
-        .output-content .warning {
-            color: var(--accent-orange);
+        .output-content .info {
+            color: var(--accent-cyan);
         }
 
         /* Buttons */
         .btn {
-            padding: 6px 14px;
+            padding: 7px 16px;
             border: none;
-            border-radius: var(--radius-sm);
+            border-radius: 6px;
             font-family: inherit;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .btn span {
-            position: relative;
-            z-index: 1;
+            transition: all 0.2s;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
             color: var(--bg-void);
-            box-shadow: var(--shadow-medium);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-strong);
+            box-shadow: var(--shadow-medium);
         }
 
         .btn-secondary {
@@ -401,25 +362,22 @@
 
         .btn-secondary:hover {
             background: var(--bg-elevated);
-            border-color: var(--accent-cyan);
         }
 
-        .btn-danger {
-            background: var(--accent-red);
-            color: white;
+        .btn-small {
+            padding: 4px 10px;
+            font-size: 12px;
         }
 
         .btn-icon {
             padding: 6px;
             background: transparent;
             color: var(--text-secondary);
-            border: 1px solid transparent;
         }
 
         .btn-icon:hover {
             background: var(--bg-overlay);
             color: var(--text-primary);
-            border-color: var(--border-emphasis);
         }
 
         /* Status Bar */
@@ -446,70 +404,6 @@
             gap: 16px;
         }
 
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* Context Menu */
-        .context-menu {
-            position: fixed;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-emphasis);
-            border-radius: var(--radius-md);
-            padding: 6px;
-            box-shadow: var(--shadow-strong);
-            z-index: 1000;
-            display: none;
-            min-width: 180px;
-        }
-
-        .context-menu.show {
-            display: block;
-            animation: contextMenuAppear 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes contextMenuAppear {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(-8px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .context-menu-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 13px;
-            color: var(--text-primary);
-            transition: all 0.15s;
-        }
-
-        .context-menu-item:hover {
-            background: var(--bg-overlay);
-            color: var(--accent-cyan);
-        }
-
-        .context-menu-divider {
-            height: 1px;
-            background: var(--border-subtle);
-            margin: 4px 0;
-        }
-
-        .context-menu-shortcut {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-left: 16px;
-        }
-
         /* Modal */
         .modal-overlay {
             position: fixed;
@@ -523,45 +417,26 @@
             align-items: center;
             justify-content: center;
             z-index: 2000;
-            animation: fadeIn 0.2s;
         }
 
         .modal-overlay.show {
             display: flex;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
         .modal {
             background: var(--bg-elevated);
             border: 1px solid var(--border-emphasis);
-            border-radius: var(--radius-lg);
+            border-radius: 12px;
             padding: 24px;
             max-width: 500px;
             width: 90%;
             box-shadow: var(--shadow-strong);
-            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .modal-title {
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 16px;
-            color: var(--text-primary);
         }
 
         .modal-body {
@@ -579,12 +454,11 @@
             padding: 10px 14px;
             background: var(--bg-surface);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-sm);
+            border-radius: 6px;
             color: var(--text-primary);
             font-family: inherit;
             font-size: 14px;
             outline: none;
-            transition: all 0.2s;
         }
 
         .input-field:focus {
@@ -592,27 +466,36 @@
             box-shadow: 0 0 0 3px rgba(88, 209, 235, 0.1);
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 48px;
+            right: 24px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-emphasis);
+            border-left: 4px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 14px 20px;
+            box-shadow: var(--shadow-strong);
+            z-index: 3000;
+            display: none;
+            min-width: 300px;
         }
 
-        ::-webkit-scrollbar-track {
-            background: var(--bg-surface);
+        .toast.show {
+            display: block;
+            animation: slideUp 0.3s;
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: var(--bg-overlay);
-            border-radius: 5px;
-            border: 2px solid var(--bg-surface);
+        .toast.error { border-left-color: var(--accent-red); }
+        .toast.success { border-left-color: var(--accent-green); }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--border-emphasis);
-        }
-
-        /* Loading Spinner */
+        /* Loading */
         .loading-spinner {
             display: inline-block;
             width: 16px;
@@ -627,82 +510,56 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .app-container {
-                grid-template-columns: 1fr;
-                grid-template-areas:
-                    "titlebar"
-                    "main"
-                    "output";
-                grid-template-rows: 48px 1fr 200px;
-            }
-
-            .sidebar {
-                display: none;
-            }
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
         }
 
-        /* Animations */
-        .fade-in {
-            animation: fadeIn 0.3s;
+        ::-webkit-scrollbar-track {
+            background: var(--bg-surface);
         }
 
-        .slide-in-left {
-            animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-overlay);
+            border-radius: 5px;
         }
 
-        @keyframes slideInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        /* Notification Toast */
-        .toast {
+        .context-menu {
             position: fixed;
-            bottom: 48px;
-            right: 24px;
             background: var(--bg-elevated);
             border: 1px solid var(--border-emphasis);
-            border-left: 4px solid var(--accent-cyan);
-            border-radius: var(--radius-md);
-            padding: 14px 20px;
+            border-radius: 8px;
+            padding: 6px;
             box-shadow: var(--shadow-strong);
-            z-index: 3000;
+            z-index: 1000;
             display: none;
-            align-items: center;
-            gap: 12px;
-            min-width: 300px;
-            animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 180px;
         }
 
-        .toast.show {
+        .context-menu.show {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            transition: all 0.15s;
         }
 
-        .toast.error {
-            border-left-color: var(--accent-red);
+        .context-menu-item:hover {
+            background: var(--bg-overlay);
+            color: var(--accent-cyan);
         }
 
-        .toast.success {
-            border-left-color: var(--accent-green);
-        }
-
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .context-menu-divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 4px 0;
         }
     </style>
 </head>
@@ -711,29 +568,25 @@
         <!-- Titlebar -->
         <div class="titlebar">
             <div class="titlebar-left">
-                <div class="app-logo">PyTerminal</div>
-                <div class="current-file-display" id="current-file-display">/workspace/main.py</div>
+                <div class="app-logo">⚡ PyTerminal Pro</div>
+                <div class="current-path" id="current-path">/workspace</div>
             </div>
             <div class="titlebar-controls">
-                <button class="btn btn-secondary" onclick="fileSystem.createNewFile()">
-                    <span>📄 New File</span>
-                </button>
-                <button class="btn btn-secondary" onclick="fileSystem.createNewFolder()">
-                    <span>📁 New Folder</span>
-                </button>
-                <button class="btn btn-primary" onclick="executeCode()">
-                    <span>▶ Run</span>
-                </button>
+                <button class="btn btn-secondary btn-small" onclick="fileSystem.newFile()">📄 New File</button>
+                <button class="btn btn-secondary btn-small" onclick="fileSystem.newFolder()">📁 New Folder</button>
+                <button class="btn btn-primary" onclick="executeCode()">▶ Run Code</button>
             </div>
         </div>
 
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-title">File Explorer</div>
-                <button class="btn-icon" onclick="fileSystem.refreshTree()" title="Refresh">
-                    🔄
-                </button>
+                <div class="sidebar-title">📂 File Explorer</div>
+                <div class="path-breadcrumb" id="path-breadcrumb"></div>
+                <div class="sidebar-actions">
+                    <button class="btn btn-secondary btn-small" onclick="fileSystem.navigateUp()">⬆ Up</button>
+                    <button class="btn btn-secondary btn-small" onclick="fileSystem.refresh()">🔄 Refresh</button>
+                </div>
             </div>
             <div class="file-tree" id="file-tree"></div>
         </div>
@@ -742,7 +595,7 @@
         <div class="main-area">
             <div class="tabs-bar" id="tabs-bar"></div>
             <div class="editor-container">
-                <div id="monaco-editor"></div>
+                <textarea id="code-editor"></textarea>
             </div>
         </div>
 
@@ -753,9 +606,9 @@
                     <span>🖥️ Output</span>
                     <span class="loading-spinner" id="execution-spinner" style="display: none;"></span>
                 </div>
-                <div class="output-controls">
-                    <button class="btn-icon" onclick="copyOutput()" title="Copy Output">📋</button>
-                    <button class="btn-icon" onclick="clearOutput()" title="Clear Output">🗑️</button>
+                <div>
+                    <button class="btn-icon" onclick="copyOutput()">📋</button>
+                    <button class="btn-icon" onclick="clearOutput()">🗑️</button>
                 </div>
             </div>
             <div class="output-content" id="output"></div>
@@ -764,285 +617,354 @@
         <!-- Status Bar -->
         <div class="status-bar">
             <div class="status-left">
-                <div class="status-item">
-                    <span id="status-message">Ready</span>
-                </div>
-                <div class="status-item">
-                    <span id="line-col-info">Ln 1, Col 1</span>
-                </div>
+                <span id="status-message">Initializing...</span>
+                <span id="line-col-info">Ln 1, Col 1</span>
             </div>
             <div class="status-right">
-                <div class="status-item">Python 3.11</div>
-                <div class="status-item">UTF-8</div>
-                <div class="status-item" id="file-count">0 files</div>
+                <span>Python 3.11</span>
+                <span id="file-count">0 files</span>
             </div>
         </div>
     </div>
 
     <!-- Context Menu -->
     <div class="context-menu" id="context-menu">
-        <div class="context-menu-item" onclick="contextMenuAction('new-file')">
-            <span>📄 New File</span>
-            <span class="context-menu-shortcut">Ctrl+N</span>
-        </div>
-        <div class="context-menu-item" onclick="contextMenuAction('new-folder')">
-            <span>📁 New Folder</span>
-        </div>
+        <div class="context-menu-item" onclick="contextAction('open')">📂 Open</div>
+        <div class="context-menu-item" onclick="contextAction('rename')">✏️ Rename</div>
+        <div class="context-menu-item" onclick="contextAction('delete')">🗑️ Delete</div>
         <div class="context-menu-divider"></div>
-        <div class="context-menu-item" onclick="contextMenuAction('rename')">
-            <span>✏️ Rename</span>
-            <span class="context-menu-shortcut">F2</span>
-        </div>
-        <div class="context-menu-item" onclick="contextMenuAction('delete')">
-            <span>🗑️ Delete</span>
-            <span class="context-menu-shortcut">Del</span>
-        </div>
-        <div class="context-menu-divider"></div>
-        <div class="context-menu-item" onclick="contextMenuAction('copy-path')">
-            <span>📋 Copy Path</span>
-        </div>
+        <div class="context-menu-item" onclick="contextAction('copy-path')">📋 Copy Path</div>
     </div>
 
-    <!-- Modals -->
+    <!-- Modal -->
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal">
-            <div class="modal-title" id="modal-title">Modal Title</div>
+            <div class="modal-title" id="modal-title">Title</div>
             <div class="modal-body" id="modal-body"></div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal()">
-                    <span>Cancel</span>
-                </button>
-                <button class="btn btn-primary" id="modal-confirm-btn" onclick="confirmModal()">
-                    <span>Confirm</span>
-                </button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmModal()">Confirm</button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <span id="toast-message"></span>
-    </div>
+    <!-- Toast -->
+    <div class="toast" id="toast"><span id="toast-message"></span></div>
 
-    <!-- Monaco Editor -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
-    
-    <!-- Pyodide -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <!-- CodeMirror -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+
+    <!-- Pyodide (loaded separately to avoid cloning issues) -->
+    <script>
+        let pyodideReadyPromise = null;
+        let pyodide = null;
+
+        async function initPyodide() {
+            if (pyodideReadyPromise) return pyodideReadyPromise;
+            
+            pyodideReadyPromise = (async () => {
+                try {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js';
+                    
+                    await new Promise((resolve, reject) => {
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+
+                    pyodide = await loadPyodide({
+                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/",
+                        stdout: (text) => appendOutput(text),
+                        stderr: (text) => appendOutput(text, 'error')
+                    });
+
+                    // Load numpy
+                    await pyodide.loadPackage(['numpy']);
+
+                    return pyodide;
+                } catch (error) {
+                    console.error('Pyodide init error:', error);
+                    throw error;
+                }
+            })();
+
+            return pyodideReadyPromise;
+        }
+    </script>
 
     <script>
         // Global variables
         let editor;
-        let pyodide;
-        let currentModalCallback = null;
-        let contextMenuTarget = null;
+        let modalCallback = null;
+        let contextTarget = null;
 
-        // File System Class
+        // File System Implementation
         class FileSystem {
             constructor() {
-                this.root = {
-                    type: 'folder',
-                    name: 'workspace',
-                    path: '/workspace',
-                    children: {
-                        'main.py': {
-                            type: 'file',
-                            name: 'main.py',
-                            path: '/workspace/main.py',
-                            content: `# Welcome to PyTerminal - Enhanced Python IDE
+                this.files = {
+                    '/workspace': {
+                        type: 'folder',
+                        name: 'workspace',
+                        children: {
+                            'main.py': {
+                                type: 'file',
+                                name: 'main.py',
+                                content: `# PyTerminal Pro - Full Python IDE
 """
-Author: Basit Ahmad Ganie
-Simulated Linux-like File System
+Complete file system with directory navigation
+Create files and folders, import modules naturally!
 """
 
-# Example: Import from another file
-# from utils import greet
+# Import from adjacent module
+from utils import greet, calculate
 
 def main():
-    print("Hello from PyTerminal!")
-    print("This is a simulated Linux file system.")
-    print("Create files and folders, import modules!")
+    print("🚀 Welcome to PyTerminal Pro!")
+    print(greet("Basit"))
     
-    # Math example
-    for i in range(5):
-        print(f"Square of {i}: {i**2}")
+    # Use imported function
+    result = calculate(10, 5)
+    print(f"Calculation result: {result}")
+    
+    # List comprehension
+    squares = [x**2 for x in range(1, 6)]
+    print(f"Squares: {squares}")
 
 if __name__ == "__main__":
     main()
 `
+                            },
+                            'utils.py': {
+                                type: 'file',
+                                name: 'utils.py',
+                                content: `# Utility Module
+"""Helper functions that can be imported"""
+
+def greet(name):
+    """Greet someone"""
+    return f"Hello, {name}! 👋"
+
+def calculate(a, b):
+    """Perform calculation"""
+    return a * b + (a - b)
+
+def factorial(n):
+    """Calculate factorial"""
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+# More utilities
+class MathHelper:
+    @staticmethod
+    def square(x):
+        return x ** 2
+    
+    @staticmethod
+    def cube(x):
+        return x ** 3
+`
+                            },
+                            'examples': {
+                                type: 'folder',
+                                name: 'examples',
+                                children: {
+                                    'hello.py': {
+                                        type: 'file',
+                                        name: 'hello.py',
+                                        content: `# Simple Hello World
+print("Hello from examples folder!")
+
+for i in range(5):
+    print(f"Count: {i}")
+`
+                                    }
+                                }
+                            }
                         }
                     }
                 };
-                this.openTabs = new Set(['/workspace/main.py']);
-                this.activeFile = '/workspace/main.py';
-                this.fileContents = new Map();
+                
+                this.currentPath = '/workspace';
+                this.openTabs = ['/workspace/main.py'];
+                this.activeTab = '/workspace/main.py';
             }
 
-            // Get file/folder by path
-            getByPath(path) {
-                if (path === '/workspace') return this.root;
+            getItem(path) {
+                if (path === '/workspace') return this.files['/workspace'];
                 
-                const parts = path.split('/').filter(p => p && p !== 'workspace');
-                let current = this.root;
+                const parts = path.split('/').filter(p => p);
+                let current = this.files['/workspace'];
                 
-                for (const part of parts) {
-                    if (!current.children || !current.children[part]) {
+                for (let i = 1; i < parts.length; i++) {
+                    if (!current.children || !current.children[parts[i]]) {
                         return null;
                     }
-                    current = current.children[part];
+                    current = current.children[parts[i]];
                 }
                 
                 return current;
             }
 
-            // Create file
-            createFile(path, name, content = '') {
-                const parent = this.getByPath(path);
-                if (!parent || parent.type !== 'folder') return false;
+            getCurrentDir() {
+                return this.getItem(this.currentPath);
+            }
+
+            listCurrentDir() {
+                const dir = this.getCurrentDir();
+                if (!dir || dir.type !== 'folder') return [];
                 
-                const fullPath = `${path}/${name}`;
-                const newFile = {
+                return Object.values(dir.children || {}).sort((a, b) => {
+                    if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+                    return a.name.localeCompare(b.name);
+                });
+            }
+
+            createFile(name, content = '') {
+                const dir = this.getCurrentDir();
+                if (!dir || dir.type !== 'folder') return false;
+                
+                if (dir.children[name]) {
+                    showToast('File already exists!', 'error');
+                    return false;
+                }
+
+                dir.children[name] = {
                     type: 'file',
                     name: name,
-                    path: fullPath,
                     content: content
                 };
-                
-                parent.children = parent.children || {};
-                parent.children[name] = newFile;
-                
-                this.fileContents.set(fullPath, content);
-                this.refreshTree();
-                return fullPath;
+
+                this.refresh();
+                const fullPath = `${this.currentPath}/${name}`;
+                this.openFile(fullPath);
+                showToast(`Created ${name}`, 'success');
+                return true;
             }
 
-            // Create folder
-            createFolder(path, name) {
-                const parent = this.getByPath(path);
-                if (!parent || parent.type !== 'folder') return false;
+            createFolder(name) {
+                const dir = this.getCurrentDir();
+                if (!dir || dir.type !== 'folder') return false;
                 
-                const fullPath = `${path}/${name}`;
-                const newFolder = {
+                if (dir.children[name]) {
+                    showToast('Folder already exists!', 'error');
+                    return false;
+                }
+
+                dir.children[name] = {
                     type: 'folder',
                     name: name,
-                    path: fullPath,
                     children: {}
                 };
-                
-                parent.children = parent.children || {};
-                parent.children[name] = newFolder;
-                
-                this.refreshTree();
-                return fullPath;
-            }
 
-            // Delete file/folder
-            delete(path) {
-                const parts = path.split('/').filter(p => p && p !== 'workspace');
-                const name = parts.pop();
-                const parentPath = '/' + ['workspace', ...parts].join('/');
-                
-                const parent = this.getByPath(parentPath);
-                if (!parent || !parent.children || !parent.children[name]) return false;
-                
-                delete parent.children[name];
-                this.fileContents.delete(path);
-                this.openTabs.delete(path);
-                
-                if (this.activeFile === path) {
-                    const remaining = Array.from(this.openTabs);
-                    this.activeFile = remaining[0] || '/workspace/main.py';
-                }
-                
-                this.refreshTree();
+                this.refresh();
+                showToast(`Created folder ${name}`, 'success');
                 return true;
             }
 
-            // Rename file/folder
-            rename(oldPath, newName) {
-                const parts = oldPath.split('/').filter(p => p && p !== 'workspace');
+            deleteItem(path) {
+                const parts = path.split('/').filter(p => p);
+                const name = parts.pop();
+                const parentPath = '/' + parts.join('/');
+                const parent = this.getItem(parentPath);
+                
+                if (!parent || !parent.children || !parent.children[name]) return false;
+
+                delete parent.children[name];
+                
+                // Close tab if file was open
+                this.openTabs = this.openTabs.filter(t => !t.startsWith(path));
+                if (this.activeTab === path || this.activeTab.startsWith(path + '/')) {
+                    this.activeTab = this.openTabs[0] || null;
+                }
+
+                this.refresh();
+                renderTabs();
+                showToast('Deleted successfully', 'success');
+                return true;
+            }
+
+            renameItem(path, newName) {
+                const parts = path.split('/').filter(p => p);
                 const oldName = parts.pop();
-                const parentPath = '/' + ['workspace', ...parts].join('/');
+                const parentPath = '/' + parts.join('/');
+                const parent = this.getItem(parentPath);
                 
-                const parent = this.getByPath(parentPath);
                 if (!parent || !parent.children || !parent.children[oldName]) return false;
-                
+                if (parent.children[newName]) {
+                    showToast('Name already exists!', 'error');
+                    return false;
+                }
+
                 const item = parent.children[oldName];
-                const newPath = `${parentPath}/${newName}`;
-                
                 item.name = newName;
-                item.path = newPath;
-                
                 parent.children[newName] = item;
                 delete parent.children[oldName];
-                
-                if (this.fileContents.has(oldPath)) {
-                    const content = this.fileContents.get(oldPath);
-                    this.fileContents.delete(oldPath);
-                    this.fileContents.set(newPath, content);
-                }
-                
-                if (this.openTabs.has(oldPath)) {
-                    this.openTabs.delete(oldPath);
-                    this.openTabs.add(newPath);
-                }
-                
-                if (this.activeFile === oldPath) {
-                    this.activeFile = newPath;
-                }
-                
-                this.refreshTree();
-                return newPath;
-            }
 
-            // Get file content
-            getContent(path) {
-                const file = this.getByPath(path);
-                if (!file || file.type !== 'file') return null;
+                const newPath = `${parentPath}/${newName}`;
                 
-                if (this.fileContents.has(path)) {
-                    return this.fileContents.get(path);
+                // Update open tabs
+                this.openTabs = this.openTabs.map(t => 
+                    t === path ? newPath : t
+                );
+                if (this.activeTab === path) {
+                    this.activeTab = newPath;
                 }
-                
-                return file.content || '';
-            }
 
-            // Set file content
-            setContent(path, content) {
-                const file = this.getByPath(path);
-                if (!file || file.type !== 'file') return false;
-                
-                this.fileContents.set(path, content);
-                file.content = content;
-                return true;
-            }
-
-            // Open file in editor
-            openFile(path) {
-                const file = this.getByPath(path);
-                if (!file || file.type !== 'file') return false;
-                
-                this.openTabs.add(path);
-                this.activeFile = path;
-                
-                const content = this.getContent(path);
-                editor.setValue(content);
-                
-                updateCurrentFileDisplay();
+                this.refresh();
                 renderTabs();
+                showToast(`Renamed to ${newName}`, 'success');
                 return true;
             }
 
-            // Close tab
-            closeTab(path) {
-                this.openTabs.delete(path);
+            changeDirectory(path) {
+                const item = this.getItem(path);
+                if (!item || item.type !== 'folder') return false;
                 
-                if (this.activeFile === path) {
-                    const remaining = Array.from(this.openTabs);
-                    if (remaining.length > 0) {
-                        this.openFile(remaining[remaining.length - 1]);
+                this.currentPath = path;
+                this.refresh();
+                updatePathDisplay();
+                return true;
+            }
+
+            navigateUp() {
+                if (this.currentPath === '/workspace') return;
+                
+                const parts = this.currentPath.split('/').filter(p => p);
+                parts.pop();
+                this.currentPath = '/' + parts.join('/');
+                
+                this.refresh();
+                updatePathDisplay();
+            }
+
+            openFile(path) {
+                const file = this.getItem(path);
+                if (!file || file.type !== 'file') return false;
+
+                if (!this.openTabs.includes(path)) {
+                    this.openTabs.push(path);
+                }
+                
+                this.activeTab = path;
+                editor.setValue(file.content || '');
+                
+                renderTabs();
+                updatePathDisplay();
+                return true;
+            }
+
+            closeTab(path) {
+                this.openTabs = this.openTabs.filter(t => t !== path);
+                
+                if (this.activeTab === path) {
+                    this.activeTab = this.openTabs[this.openTabs.length - 1] || null;
+                    if (this.activeTab) {
+                        const file = this.getItem(this.activeTab);
+                        if (file) editor.setValue(file.content || '');
                     } else {
-                        this.activeFile = null;
                         editor.setValue('');
                     }
                 }
@@ -1050,302 +972,145 @@ if __name__ == "__main__":
                 renderTabs();
             }
 
-            // Render file tree
-            renderTree() {
-                const treeContainer = document.getElementById('file-tree');
-                treeContainer.innerHTML = '';
+            saveCurrentFile() {
+                if (!this.activeTab) return false;
                 
-                const renderNode = (node, container, level = 0) => {
-                    const item = document.createElement('div');
-                    item.className = `tree-item ${node.type}`;
-                    item.style.paddingLeft = `${level * 12 + 12}px`;
-                    
-                    if (node.type === 'folder') {
-                        item.classList.add('collapsed');
-                        item.innerHTML = `<span class="tree-icon">📁</span><span>${node.name}</span>`;
-                        
-                        item.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            item.classList.toggle('collapsed');
-                            item.classList.toggle('expanded');
-                            childrenContainer.classList.toggle('expanded');
-                        });
-                    } else {
-                        const icon = node.name.endsWith('.py') ? '🐍' : '📄';
-                        item.innerHTML = `<span class="tree-icon">${icon}</span><span>${node.name}</span>`;
-                        
-                        if (node.path === this.activeFile) {
-                            item.classList.add('active');
-                        }
-                        
-                        item.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            this.openFile(node.path);
-                        });
-                    }
-                    
-                    // Right-click context menu
-                    item.addEventListener('contextmenu', (e) => {
-                        e.preventDefault();
-                        showContextMenu(e.clientX, e.clientY, node.path);
-                    });
-                    
-                    container.appendChild(item);
-                    
-                    if (node.type === 'folder' && node.children) {
-                        const childrenContainer = document.createElement('div');
-                        childrenContainer.className = 'tree-item-children';
-                        
-                        Object.values(node.children)
-                            .sort((a, b) => {
-                                if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-                                return a.name.localeCompare(b.name);
-                            })
-                            .forEach(child => renderNode(child, childrenContainer, level + 1));
-                        
-                        container.appendChild(childrenContainer);
-                    }
-                };
+                const file = this.getItem(this.activeTab);
+                if (!file || file.type !== 'file') return false;
                 
-                renderNode(this.root, treeContainer);
+                file.content = editor.getValue();
+                return true;
+            }
+
+            refresh() {
+                renderFileTree();
                 updateFileCount();
             }
 
-            refreshTree() {
-                this.renderTree();
-            }
-
-            // New file dialog
-            createNewFile() {
+            newFile() {
                 showModal('Create New File', (name) => {
                     if (name && name.trim()) {
-                        const fileName = name.trim().endsWith('.py') ? name.trim() : name.trim() + '.py';
-                        const newPath = this.createFile('/workspace', fileName, '# New Python file\n\n');
-                        if (newPath) {
-                            this.openFile(newPath);
-                            showToast(`Created ${fileName}`, 'success');
-                        }
+                        const fileName = name.trim();
+                        const finalName = fileName.endsWith('.py') ? fileName : fileName + '.py';
+                        this.createFile(finalName, '# New Python file\n\n');
                     }
                 });
             }
 
-            // New folder dialog
-            createNewFolder() {
+            newFolder() {
                 showModal('Create New Folder', (name) => {
                     if (name && name.trim()) {
-                        const folderPath = this.createFolder('/workspace', name.trim());
-                        if (folderPath) {
-                            showToast(`Created folder ${name.trim()}`, 'success');
-                        }
+                        this.createFolder(name.trim());
                     }
                 });
             }
-        }
 
-        // Initialize file system
-        const fileSystem = new FileSystem();
-
-        // Initialize Monaco Editor
-        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
-        
-        require(['vs/editor/editor.main'], function () {
-            editor = monaco.editor.create(document.getElementById('monaco-editor'), {
-                value: fileSystem.getContent(fileSystem.activeFile),
-                language: 'python',
-                theme: 'vs-dark',
-                fontSize: 14,
-                lineNumbers: 'on',
-                minimap: { enabled: true },
-                automaticLayout: true,
-                scrollBeyondLastLine: false,
-                tabSize: 4,
-                insertSpaces: true,
-                wordWrap: 'on',
-                contextmenu: true,
-                quickSuggestions: true,
-                suggestOnTriggerCharacters: true,
-                acceptSuggestionOnCommitCharacter: true,
-                acceptSuggestionOnEnter: 'on',
-                snippetSuggestions: 'inline',
-                formatOnPaste: true,
-                formatOnType: true
-            });
-
-            // Save content on change
-            editor.onDidChangeModelContent(() => {
-                if (fileSystem.activeFile) {
-                    const content = editor.getValue();
-                    fileSystem.setContent(fileSystem.activeFile, content);
-                }
-            });
-
-            // Update cursor position
-            editor.onDidChangeCursorPosition(() => {
-                const position = editor.getPosition();
-                document.getElementById('line-col-info').textContent = `Ln ${position.lineNumber}, Col ${position.column}`;
-            });
-
-            // Keyboard shortcuts
-            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-                saveCurrentFile();
-            });
-
-            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-                executeCode();
-            });
-
-            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyN, () => {
-                fileSystem.createNewFile();
-            });
-        });
-
-        // Initialize Pyodide
-        async function initPyodide() {
-            try {
-                document.getElementById('status-message').textContent = 'Initializing Python...';
+            getAllPythonFiles() {
+                const files = {};
                 
-                pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
-                });
-
-                // Create virtual file system
-                await pyodide.runPythonAsync(`
-                    import sys
-                    import io
-                    
-                    class OutputCapture:
-                        def __init__(self):
-                            self.buffer = ""
-                        
-                        def write(self, text):
-                            self.buffer += text
-                            return len(text)
-                        
-                        def flush(self):
-                            pass
-                        
-                        def getvalue(self):
-                            return self.buffer
-                        
-                        def clear(self):
-                            self.buffer = ""
-                    
-                    stdout_capture = OutputCapture()
-                    stderr_capture = OutputCapture()
-                `);
-
-                await pyodide.loadPackage(['numpy', 'micropip']);
-                
-                document.getElementById('status-message').textContent = 'Ready';
-                showToast('Python initialized successfully', 'success');
-            } catch (error) {
-                document.getElementById('status-message').textContent = 'Python initialization failed';
-                showToast('Failed to initialize Python: ' + error.message, 'error');
-            }
-        }
-
-        // Execute Python code
-        async function executeCode() {
-            if (!pyodide) {
-                showToast('Python is not initialized yet', 'error');
-                return;
-            }
-
-            const code = editor.getValue();
-            if (!code.trim()) return;
-
-            document.getElementById('status-message').textContent = 'Running...';
-            document.getElementById('execution-spinner').style.display = 'block';
-            clearOutput();
-
-            try {
-                // Load all Python files into Pyodide's virtual filesystem
-                const walkFileSystem = (node) => {
-                    if (node.type === 'file' && node.name.endsWith('.py')) {
-                        const content = fileSystem.getContent(node.path);
-                        const moduleName = node.name.replace('.py', '');
-                        pyodide.FS.writeFile(`/${moduleName}.py`, content);
-                    } else if (node.type === 'folder' && node.children) {
-                        Object.values(node.children).forEach(walkFileSystem);
+                const traverse = (path, item) => {
+                    if (item.type === 'file' && item.name.endsWith('.py')) {
+                        files[path] = item.content;
+                    } else if (item.type === 'folder' && item.children) {
+                        Object.entries(item.children).forEach(([name, child]) => {
+                            traverse(`${path}/${name}`, child);
+                        });
                     }
                 };
                 
-                walkFileSystem(fileSystem.root);
-
-                // Redirect output
-                await pyodide.runPythonAsync(`
-                    stdout_capture.clear()
-                    stderr_capture.clear()
-                    sys.stdout = stdout_capture
-                    sys.stderr = stderr_capture
-                `);
-
-                // Execute code
-                await pyodide.runPythonAsync(code);
-
-                // Get output
-                const stdout = await pyodide.runPythonAsync(`stdout_capture.getvalue()`);
-                const stderr = await pyodide.runPythonAsync(`stderr_capture.getvalue()`);
-
-                if (stdout) {
-                    appendOutput(stdout);
-                }
-                
-                if (stderr) {
-                    appendOutput(stderr, 'error');
-                }
-
-                if (!stdout && !stderr) {
-                    appendOutput('Code executed successfully (no output)');
-                }
-
-                document.getElementById('status-message').textContent = 'Execution completed';
-                
-            } catch (error) {
-                appendOutput(`Error: ${error.message}`, 'error');
-                document.getElementById('status-message').textContent = 'Execution failed';
-            } finally {
-                document.getElementById('execution-spinner').style.display = 'none';
+                traverse('/workspace', this.files['/workspace']);
+                return files;
             }
         }
 
-        // Output functions
-        function appendOutput(text, type = 'normal') {
-            const outputEl = document.getElementById('output');
-            const span = document.createElement('span');
-            span.className = type;
-            span.textContent = text + '\n';
-            outputEl.appendChild(span);
-            outputEl.scrollTop = outputEl.scrollHeight;
-        }
+        const fileSystem = new FileSystem();
 
-        function clearOutput() {
-            document.getElementById('output').innerHTML = '';
-        }
+        // Initialize CodeMirror
+        editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+            mode: 'python',
+            theme: 'monokai',
+            lineNumbers: true,
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true,
+            extraKeys: {
+                'Ctrl-S': () => {
+                    fileSystem.saveCurrentFile();
+                    showToast('File saved', 'success');
+                },
+                'Ctrl-Enter': () => executeCode(),
+                'Tab': (cm) => {
+                    if (cm.somethingSelected()) {
+                        cm.indentSelection('add');
+                    } else {
+                        cm.replaceSelection('    ', 'end');
+                    }
+                }
+            }
+        });
 
-        function copyOutput() {
-            const output = document.getElementById('output').textContent;
-            navigator.clipboard.writeText(output).then(() => {
-                showToast('Output copied to clipboard', 'success');
+        editor.on('change', () => {
+            fileSystem.saveCurrentFile();
+        });
+
+        editor.on('cursorActivity', () => {
+            const cursor = editor.getCursor();
+            document.getElementById('line-col-info').textContent = `Ln ${cursor.line + 1}, Col ${cursor.ch + 1}`;
+        });
+
+        // Render file tree
+        function renderFileTree() {
+            const tree = document.getElementById('file-tree');
+            tree.innerHTML = '';
+
+            const items = fileSystem.listCurrentDir();
+            
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'tree-item ' + item.type;
+                
+                const fullPath = `${fileSystem.currentPath}/${item.name}`;
+                
+                if (item.type === 'folder') {
+                    el.innerHTML = `<span class="tree-item-icon">▶</span><span>📁 ${item.name}</span>`;
+                    el.onclick = () => fileSystem.changeDirectory(fullPath);
+                } else {
+                    const icon = item.name.endsWith('.py') ? '🐍' : '📄';
+                    el.innerHTML = `<span class="tree-item-icon">${icon}</span><span>${item.name}</span>`;
+                    
+                    if (fullPath === fileSystem.activeTab) {
+                        el.classList.add('active');
+                    }
+                    
+                    el.onclick = () => fileSystem.openFile(fullPath);
+                }
+
+                el.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    showContextMenu(e.clientX, e.clientY, fullPath);
+                };
+
+                tree.appendChild(el);
             });
         }
 
-        // Tab management
+        // Render tabs
         function renderTabs() {
             const tabsBar = document.getElementById('tabs-bar');
             tabsBar.innerHTML = '';
 
             fileSystem.openTabs.forEach(path => {
-                const file = fileSystem.getByPath(path);
+                const file = fileSystem.getItem(path);
                 if (!file) return;
 
                 const tab = document.createElement('div');
-                tab.className = `tab ${path === fileSystem.activeFile ? 'active' : ''}`;
+                tab.className = `tab ${path === fileSystem.activeTab ? 'active' : ''}`;
                 
                 const icon = file.name.endsWith('.py') ? '🐍' : '📄';
+                const displayPath = path.replace('/workspace/', '');
+                
                 tab.innerHTML = `
-                    <span class="tree-icon">${icon}</span>
-                    <span>${file.name}</span>
+                    <span>${icon} ${displayPath}</span>
                     <span class="tab-close" onclick="event.stopPropagation(); fileSystem.closeTab('${path}')">×</span>
                 `;
 
@@ -1354,99 +1119,154 @@ if __name__ == "__main__":
             });
         }
 
-        // Update current file display
-        function updateCurrentFileDisplay() {
-            document.getElementById('current-file-display').textContent = fileSystem.activeFile || 'No file open';
+        // Update path display
+        function updatePathDisplay() {
+            document.getElementById('current-path').textContent = fileSystem.currentPath;
+            
+            const breadcrumb = document.getElementById('path-breadcrumb');
+            const parts = fileSystem.currentPath.split('/').filter(p => p);
+            
+            breadcrumb.innerHTML = parts.map((part, i) => {
+                const path = '/' + parts.slice(0, i + 1).join('/');
+                return `<span class="path-segment" onclick="fileSystem.changeDirectory('${path}')">${part}</span>`;
+            }).join('<span>/</span>');
         }
 
         // Update file count
         function updateFileCount() {
-            let count = 0;
-            const countFiles = (node) => {
-                if (node.type === 'file') count++;
-                if (node.type === 'folder' && node.children) {
-                    Object.values(node.children).forEach(countFiles);
-                }
-            };
-            countFiles(fileSystem.root);
+            const count = Object.keys(fileSystem.getAllPythonFiles()).length;
             document.getElementById('file-count').textContent = `${count} file${count !== 1 ? 's' : ''}`;
         }
 
-        // Save current file
-        function saveCurrentFile() {
-            if (!fileSystem.activeFile) return;
-            
-            const content = editor.getValue();
-            const blob = new Blob([content], { type: 'text/plain' });
-            const a = document.createElement('a');
-            const fileName = fileSystem.activeFile.split('/').pop();
-            a.href = URL.createObjectURL(blob);
-            a.download = fileName;
-            a.click();
-            URL.revokeObjectURL(a.href);
-            
-            showToast(`Saved ${fileName}`, 'success');
+        // Execute Python code
+        async function executeCode() {
+            document.getElementById('status-message').textContent = 'Running...';
+            document.getElementById('execution-spinner').style.display = 'block';
+            clearOutput();
+
+            try {
+                const py = await initPyodide();
+                
+                // Get all Python files
+                const allFiles = fileSystem.getAllPythonFiles();
+                
+                appendOutput('📁 Loading modules into Python environment...\n', 'info');
+                
+                // Write all files to Pyodide's filesystem
+                for (const [path, content] of Object.entries(allFiles)) {
+                    const fileName = path.split('/').pop();
+                    try {
+                        // Remove existing file if present
+                        try {
+                            py.FS.unlink('/' + fileName);
+                        } catch (e) {
+                            // File doesn't exist, that's fine
+                        }
+                        
+                        // Write new file
+                        py.FS.writeFile('/' + fileName, content);
+                        appendOutput(`  ✓ Loaded ${fileName}\n`, 'info');
+                    } catch (e) {
+                        appendOutput(`  ✗ Failed to load ${fileName}: ${e}\n`, 'error');
+                    }
+                }
+                
+                appendOutput('\n🚀 Executing code...\n\n', 'info');
+
+                // Get current file content
+                const code = editor.getValue();
+                
+                // Execute the code
+                await py.runPythonAsync(code);
+                
+                appendOutput('\n✅ Execution completed\n', 'info');
+                document.getElementById('status-message').textContent = 'Ready ✓';
+                
+            } catch (error) {
+                appendOutput(`\n❌ Error: ${error.message}\n`, 'error');
+                document.getElementById('status-message').textContent = 'Error ✗';
+            } finally {
+                document.getElementById('execution-spinner').style.display = 'none';
+            }
+        }
+
+        // Output functions
+        function appendOutput(text, type = 'normal') {
+            const output = document.getElementById('output');
+            const span = document.createElement('span');
+            span.className = type;
+            span.textContent = text;
+            output.appendChild(span);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+
+        function copyOutput() {
+            const text = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Output copied', 'success');
+            });
         }
 
         // Context menu
         function showContextMenu(x, y, path) {
             const menu = document.getElementById('context-menu');
-            contextMenuTarget = path;
+            contextTarget = path;
             
-            menu.style.left = `${x}px`;
-            menu.style.top = `${y}px`;
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
             menu.classList.add('show');
 
-            // Close on click outside
-            const closeMenu = (e) => {
+            const close = (e) => {
                 if (!menu.contains(e.target)) {
                     menu.classList.remove('show');
-                    document.removeEventListener('click', closeMenu);
+                    document.removeEventListener('click', close);
                 }
             };
             
-            setTimeout(() => document.addEventListener('click', closeMenu), 0);
+            setTimeout(() => document.addEventListener('click', close), 0);
         }
 
-        function contextMenuAction(action) {
+        function contextAction(action) {
             const menu = document.getElementById('context-menu');
             menu.classList.remove('show');
 
-            if (!contextMenuTarget) return;
+            if (!contextTarget) return;
+
+            const item = fileSystem.getItem(contextTarget);
+            if (!item) return;
 
             switch (action) {
-                case 'new-file':
-                    fileSystem.createNewFile();
-                    break;
-                case 'new-folder':
-                    fileSystem.createNewFolder();
-                    break;
-                case 'rename':
-                    const item = fileSystem.getByPath(contextMenuTarget);
-                    if (item) {
-                        showModal(`Rename ${item.type}`, (newName) => {
-                            if (newName && newName.trim()) {
-                                fileSystem.rename(contextMenuTarget, newName.trim());
-                                showToast(`Renamed to ${newName.trim()}`, 'success');
-                            }
-                        }, item.name);
+                case 'open':
+                    if (item.type === 'file') {
+                        fileSystem.openFile(contextTarget);
+                    } else {
+                        fileSystem.changeDirectory(contextTarget);
                     }
                     break;
+                case 'rename':
+                    showModal(`Rename ${item.type}`, (name) => {
+                        if (name && name.trim()) {
+                            fileSystem.renameItem(contextTarget, name.trim());
+                        }
+                    }, item.name);
+                    break;
                 case 'delete':
-                    const toDelete = fileSystem.getByPath(contextMenuTarget);
-                    if (toDelete && confirm(`Delete ${toDelete.name}?`)) {
-                        fileSystem.delete(contextMenuTarget);
-                        showToast(`Deleted ${toDelete.name}`, 'success');
+                    if (confirm(`Delete ${item.name}?`)) {
+                        fileSystem.deleteItem(contextTarget);
                     }
                     break;
                 case 'copy-path':
-                    navigator.clipboard.writeText(contextMenuTarget).then(() => {
-                        showToast('Path copied to clipboard', 'success');
+                    navigator.clipboard.writeText(contextTarget).then(() => {
+                        showToast('Path copied', 'success');
                     });
                     break;
             }
 
-            contextMenuTarget = null;
+            contextTarget = null;
         }
 
         // Modal
@@ -1459,69 +1279,61 @@ if __name__ == "__main__":
             modalBody.innerHTML = `<input type="text" class="input-field" id="modal-input" value="${defaultValue}" placeholder="Enter name...">`;
             
             overlay.classList.add('show');
-            
-            currentModalCallback = callback;
+            modalCallback = callback;
             
             setTimeout(() => {
                 const input = document.getElementById('modal-input');
                 input.focus();
                 input.select();
                 
-                input.addEventListener('keydown', (e) => {
+                input.onkeydown = (e) => {
                     if (e.key === 'Enter') confirmModal();
                     if (e.key === 'Escape') closeModal();
-                });
+                };
             }, 100);
         }
 
         function confirmModal() {
             const input = document.getElementById('modal-input');
-            if (currentModalCallback) {
-                currentModalCallback(input.value);
-            }
+            if (modalCallback) modalCallback(input.value);
             closeModal();
         }
 
         function closeModal() {
             document.getElementById('modal-overlay').classList.remove('show');
-            currentModalCallback = null;
+            modalCallback = null;
         }
 
-        // Toast notification
+        // Toast
         function showToast(message, type = 'normal') {
             const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
+            const msg = document.getElementById('toast-message');
             
             toast.className = `toast ${type} show`;
-            toastMessage.textContent = message;
+            msg.textContent = message;
             
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // Global keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 's':
-                        e.preventDefault();
-                        saveCurrentFile();
-                        break;
-                }
-            }
-
-            if (e.key === 'F2' && contextMenuTarget) {
-                contextMenuAction('rename');
-            }
-        });
-
-        // Initialize everything
-        window.addEventListener('load', () => {
-            fileSystem.renderTree();
+        // Initialize
+        window.addEventListener('load', async () => {
+            fileSystem.refresh();
             renderTabs();
-            updateCurrentFileDisplay();
-            initPyodide();
+            updatePathDisplay();
+            
+            // Load first file
+            fileSystem.openFile('/workspace/main.py');
+            
+            // Initialize Pyodide
+            document.getElementById('status-message').textContent = 'Initializing Python...';
+            try {
+                await initPyodide();
+                document.getElementById('status-message').textContent = 'Ready ✓';
+                showToast('Python initialized successfully!', 'success');
+            } catch (error) {
+                document.getElementById('status-message').textContent = 'Initialization failed ✗';
+                showToast('Failed to initialize Python', 'error');
+            }
         });
     </script>
 </body>
