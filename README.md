@@ -1,11 +1,11 @@
-# ⚡ PyTerminal Pro
+# ⚡ PyIDE
 
 ![Version](https://img.shields.io/badge/version-1.0.0-cyan)
 ![License](https://img.shields.io/badge/license-MIT-purple)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Platform](https://img.shields.io/badge/platform-WebAssembly-orange)
 
-**PyTerminal Pro** is a sophisticated, browser-based Integrated Development Environment (IDE) designed for seamless Python development. By leveraging WebAssembly, it provides a native-feeling experience with a full virtual file system, multi-module support, and a sleek, modern aesthetic.
+**PyIDE** is a sophisticated, browser-based Integrated Development Environment (IDE) designed for seamless Python development. By leveraging WebAssembly, it provides a native-feeling experience with a full virtual file system, multi-module support, and a sleek, modern aesthetic.
 
 ---
 
